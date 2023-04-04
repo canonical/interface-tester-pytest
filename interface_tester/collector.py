@@ -19,7 +19,7 @@ from typing import List, Optional, Tuple, Type, TypedDict, TYPE_CHECKING, Dict
 
 import yaml
 
-from interface_test import (
+from .interface_test import (
     get_registered_test_cases,
     DataBagSchema,
     Role,
@@ -27,7 +27,7 @@ from interface_test import (
 )
 
 if TYPE_CHECKING:
-    from interface_test import _InterfaceTestCase
+    from .interface_test import _InterfaceTestCase
 
 ROOT = Path(__file__).parent.parent.parent
 
@@ -140,9 +140,8 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
     if not charms:
         return None
 
-    providers = charms.get('providers')
-    # fixme: uniform terminology?
-    requirers = charms.get('requirers', charms.get('requirers'))
+    providers = charms.get('providers', [])
+    requirers = charms.get('requirers', [])
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
         raise TypeError(f'{charms_yaml} file has unexpected providers/requirers spec; '
@@ -150,9 +149,21 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
                         f'got {type(providers)}/{type(requirers)}. '
                         f'Invalid charms.yaml format.')
 
+    provider_configs = []
+    requirer_configs = []
+    for source, destination in ((providers, provider_configs), (requirers, requirer_configs)):
+        for item in source:
+            try:
+                cfg = _CharmTestConfig(**item)
+            except TypeError:
+                logger.error(f'failure parsing {item} to _CharmTestConfig; invalid charm test '
+                             f'configuration in {version_dir}/charms.yaml:providers')
+                continue
+            destination.append(cfg)
+
     spec: _CharmsDotYamlSpec = {
-        'providers': [_CharmTestConfig(**dct) for dct in providers],
-        'requirers': [_CharmTestConfig(**dct) for dct in requirers]
+        'providers': provider_configs,
+        'requirers': requirer_configs
     }
     return spec
 

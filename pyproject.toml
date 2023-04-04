@@ -3,7 +3,6 @@
 
 [project]
 name = "pytest-interface-tester"
-url = "https://github.com/canonical/interface-tester-pytest"
 
 version = "0.1"
 authors = [
@@ -12,8 +11,6 @@ authors = [
 description = "Pytest plugin for checking charm relation interface protocol compliance."
 license.text = "Apache-2.0"
 keywords = ["juju", "relation interfaces"]
-
-py-modules = ["pytest_interface_tester"]
 
 dependencies = [
     "pydantic",
@@ -41,9 +38,14 @@ classifiers = [
         "Operating System :: OS Independent",
 ]
 
-[project.entry-points.pytest11]
-interface-tester = "plugin:pytest_interface_tester"
+[project.urls]
+"Homepage" = "https://github.com/canonical/interface-tester-pytest"
 
+[project.entry-points.pytest11]
+interface_tester = "interface_tester"
+
+[tool.setuptools]
+packages = ["interface_tester"]
 
 # Testing tools configuration
 [tool.coverage.run]
