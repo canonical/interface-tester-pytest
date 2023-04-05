@@ -1,11 +1,11 @@
-from typing import Type, List, Optional, Dict
-
 import typing
+from typing import Dict, List, Optional, Type
+
 from ops.charm import CharmBase
-from scenario import Event, State, Relation
+from scenario import Event, Relation, State
 
 from .errors import InvalidTestCaseError
-from .interface_test import logger, SchemaConfig
+from .interface_test import SchemaConfig, logger
 from .schema_base import DataBagSchema
 
 if typing.TYPE_CHECKING:

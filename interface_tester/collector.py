@@ -16,16 +16,12 @@ import logging
 import sys
 import types
 from pathlib import Path
-from typing import List, Optional, Tuple, Type, TypedDict, TYPE_CHECKING, Dict, Literal
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Type, TypedDict
 
 import pydantic
 import yaml
 
-from .interface_test import (
-    get_registered_test_cases,
-    DataBagSchema,
-    Role,
-)
+from .interface_test import DataBagSchema, Role, get_registered_test_cases
 
 if TYPE_CHECKING:
     from .interface_test import _InterfaceTestCase

@@ -23,8 +23,8 @@ import pytest
 from ops.testing import CharmType
 from scenario.state import Event, Relation, State, _CharmSpec
 
-from .errors import InterfaceTesterValidationError, InvalidTestCaseError
 from .collector import InterfaceTestSpec, gather_test_spec_for_version
+from .errors import InterfaceTesterValidationError, InvalidTestCaseError
 from .runner import run_test_case
 from .schema_base import DataBagSchema
 

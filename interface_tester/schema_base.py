@@ -2,8 +2,9 @@
 # See LICENSE file for licensing details.
 """This module contains base python classes used by interface schemas."""
 
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
 
 
 class DataBagSchema(BaseModel):

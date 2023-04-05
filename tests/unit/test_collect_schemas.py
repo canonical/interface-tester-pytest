@@ -3,10 +3,7 @@ from textwrap import dedent
 
 import pytest
 
-from interface_tester.collector import (
-    get_schema_from_module,
-    load_schema_module,
-)
+from interface_tester.collector import get_schema_from_module, load_schema_module
 
 
 def test_load_schema_module(tmp_path):

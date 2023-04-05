@@ -2,8 +2,8 @@ from pathlib import Path
 
 import typer
 
-from interface_tester.collector import collect_tests, _CharmTestConfig
-from interface_tester.interface_test import _InterfaceTestCase, SchemaConfig
+from interface_tester.collector import _CharmTestConfig, collect_tests
+from interface_tester.interface_test import SchemaConfig, _InterfaceTestCase
 
 
 def pprint_tests(
