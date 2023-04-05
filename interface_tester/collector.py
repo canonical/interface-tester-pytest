@@ -25,13 +25,10 @@ from .interface_test import (
     get_registered_test_cases,
     DataBagSchema,
     Role,
-    SchemaConfig,
 )
 
 if TYPE_CHECKING:
     from .interface_test import _InterfaceTestCase
-
-ROOT = Path(__file__).parent.parent.parent
 
 logger = logging.getLogger("interface_tests_checker")
 
@@ -288,7 +285,7 @@ def _gather_tests_for_interface(interface_dir: Path, interface_name: str) -> Dic
     return tests
 
 
-def collect_tests(path: Path = ROOT, include: str = "*") -> Dict[str, Dict[str, InterfaceTestSpec]]:
+def collect_tests(path: Path, include: str = "*") -> Dict[str, Dict[str, InterfaceTestSpec]]:
     """Gather the test cases collected from this path.
 
     Returns a dict structured as follows:
@@ -312,73 +309,3 @@ def collect_tests(path: Path = ROOT, include: str = "*") -> Dict[str, Dict[str, 
         )
 
     return tests
-
-
-def pprint_tests(include="*"):
-    """Pretty-print a listing of the interface tests specified in this repository."""
-    tests = collect_tests(include=include)
-
-    def pprint_case(case: "_InterfaceTestCase"):
-        state = "yes" if case.input_state else "no"
-        schema_config = (
-            case.schema if isinstance(case.schema, SchemaConfig) else "custom"
-        )
-        print(
-            f"      - {case.name}:: {case.event} (state={state}, schema={schema_config})"
-        )
-
-    for interface, versions in tests.items():
-        if not versions:
-            print(f"{interface}: <no tests>")
-            print()
-            continue
-
-        print(f"{interface}:")
-
-        for version, roles in versions.items():
-            print(f"  - {version}:")
-
-            by_role = {role: roles[role] for role in {"requirer", "provider"}}
-
-            for role, test_spec in by_role.items():
-                print(f"   - {role}:")
-
-                tests = test_spec["tests"]
-                schema = test_spec["schema"]
-
-                for test_cls in tests:
-                    pprint_case(test_cls)
-                if not tests:
-                    print(f"     - <no tests>")
-
-                if schema:
-                    # todo: check if unit/app are given.
-                    print(f"     - schema OK")
-                else:
-                    print(f"     - schema NOT OK")
-
-                charms = test_spec["charms"]
-                if charms:
-                    print("     - charms:")
-                    charm: _CharmTestConfig
-                    for charm in charms:
-                        if isinstance(charm, str):
-                            print(f"       - <BADLY FORMATTED>")
-                            continue
-
-                        custom_test_setup = "yes" if charm.test_setup else "no"
-                        print(
-                            f'       - {charm.name} ({charm.url or "NO URL"}) '
-                            f"custom_test_setup={custom_test_setup}"
-                        )
-
-                else:
-                    print("     - <no charms>")
-
-        print()
-
-
-if __name__ == "__main__":
-    collect_tests(include="ingress")
-
-    pprint_tests(include="*")
