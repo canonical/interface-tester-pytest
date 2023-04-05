@@ -2,7 +2,8 @@
 # See LICENSE file for licensing details.
 import pytest
 
-from .pytest_interface_tester import InterfaceTester
+from .plugin import InterfaceTester
+from .interface_test import interface_test_case
 
 
 @pytest.fixture(scope="function")

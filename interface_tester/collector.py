@@ -115,13 +115,13 @@ def get_schemas(file: Path) -> Dict[Literal['requirer', 'provider'], Type[DataBa
     """Load databag schemas from schema.py file."""
     if not file.exists():
         logger.warning(f'File does not exist: {file}')
-        return None, None
+        return {}
 
     try:
         module = load_schema_module(file)
     except ImportError as e:
         logger.error(f"Failed to load module {file}: {e}")
-        return None, None
+        return {}
 
     out = {}
     for role, name in (("provider", "ProviderSchema"),
