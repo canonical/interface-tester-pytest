@@ -14,9 +14,11 @@ import importlib
 import json
 import logging
 import sys
+import types
 from pathlib import Path
-from typing import List, Optional, Tuple, Type, TypedDict, TYPE_CHECKING, Dict
+from typing import List, Optional, Tuple, Type, TypedDict, TYPE_CHECKING, Dict, Literal
 
+import pydantic
 import yaml
 
 from .interface_test import (
@@ -84,41 +86,70 @@ class InterfaceTestSpec(TypedDict):
     requirer: _RoleTestSpec
 
 
+def get_schema_from_module(module: object, name: str) -> Type[pydantic.BaseModel]:
+    """Tries to get ``name`` from ``module``, expecting to find a pydantic.BaseModel."""
+    schema_cls = getattr(module, name, None)
+    if not schema_cls:
+        raise NameError(name)
+    if not issubclass(schema_cls, pydantic.BaseModel):
+        raise TypeError(type(schema_cls))
+    return schema_cls
+
+
+def load_schema_module(schema_path: Path) -> types.ModuleType:
+    """Import the schema.py file as a python module."""
+    # so we can import without tricks
+    sys.path.append(str(schema_path.parent))
+
+    # strip .py
+    module_name = str(schema_path.with_suffix("").name)
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        raise
+    finally:
+        # cleanup, just in case
+        sys.path.remove(str(schema_path.parent))
+
+    return module
+
+
+def get_schemas(file: Path) -> Dict[Literal['requirer', 'provider'], Type[DataBagSchema]]:
+    """Load databag schemas from schema.py file."""
+    if not file.exists():
+        logger.warning(f'File does not exist: {file}')
+        return None, None
+
+    try:
+        module = load_schema_module(file)
+    except ImportError as e:
+        logger.error(f"Failed to load module {file}: {e}")
+        return None, None
+
+    out = {}
+    for role, name in (("provider", "ProviderSchema"),
+                       ("requirer", "RequirerSchema")):
+        try:
+            out[role] = get_schema_from_module(module, name)
+        except NameError:
+            logger.warning(
+                f"Failed to load {name} from {file}: "
+                f"schema not defined for role: {role}."
+            )
+        except TypeError as e:
+            logger.error(
+                f"Found object called {name!r} in {file}; "
+                f"expecting a DataBagSchema subclass, not {e.args[0]!r}."
+            )
+    return out
+
+
 def _gather_schema_for_version(
         version_dir: Path,
 ) -> Tuple[Optional[Type[DataBagSchema]], Optional[Type[DataBagSchema]]]:
     """Collect the interface schema from a directory containing an interface version spec."""
     schema_location = version_dir / "schema.py"
-
-    if not schema_location.exists():
-        return None, None
-
-    # so we can import without tricks
-    sys.path.append(str(version_dir))
-
-    # strip .py
-    module_name = str(schema_location.with_suffix("").name)
-    try:
-        module = importlib.import_module(module_name)
-    except ImportError as e:
-        logger.error(f"Failed to load module {schema_location}: {e}")
-        return None, None
-
-    provider_schema = getattr(module, "ProviderSchema", None)
-    if provider_schema and not issubclass(provider_schema, DataBagSchema):
-        raise TypeError(
-            f"{version_dir}:provider_schema is not a DataBagSchema subclass"
-        )
-
-    requirer_schema = getattr(module, "RequirerSchema", None)
-    if not issubclass(requirer_schema, DataBagSchema):
-        raise TypeError(
-            f"{version_dir}:requirer_schema is not a DataBagSchema subclass"
-        )
-
-    # remove from import search path
-    sys.path.pop(-1)
-    return provider_schema, requirer_schema
+    return get_schemas()
 
 
 def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec]:
@@ -219,18 +250,18 @@ def gather_test_spec_for_version(
     provider_test_cases, requirer_test_cases = _gather_test_cases_for_version(
         version_dir, interface_name, version
     )
-    provider_schema, requirer_schema = _gather_schema_for_version(version_dir)
+    schemas = get_schemas(version_dir)
     charms = _gather_charms_for_version(version_dir)
 
     return {
         "provider": {
             "tests": provider_test_cases,
-            "schema": provider_schema,
+            "schema": schemas.get('provider'),
             "charms": charms.get("providers", []) if charms else [],
         },
         "requirer": {
             "tests": requirer_test_cases,
-            "schema": requirer_schema,
+            "schema": schemas.get('requirer'),
             "charms": charms.get("requirers", []) if charms else [],
         },
     }
