@@ -39,6 +39,7 @@ class _TestSetup(TypedDict):
     """Charm-specific configuration for the interface tester.
 
     Contains information to configure the tester."""
+
     location: Optional[str]
     """Path to a python file, relative to the charm's git repo root, where the `identifier` 
     below can be found. If not provided defaults to "tests/interfaces/conftest.py" """
@@ -66,12 +67,14 @@ class _CharmTestConfig:
 
 class _CharmsDotYamlSpec(TypedDict):
     """Specification of the `charms.yaml` file each interface/version dir should contain."""
+
     providers: List[_CharmTestConfig]
     requirers: List[_CharmTestConfig]
 
 
 class _RoleTestSpec(TypedDict):
     """The tests, schema, and charms for a single role of a given relation interface version."""
+
     tests: List["_InterfaceTestCase"]
     schema: Optional[Type[DataBagSchema]]
     charms: List[_CharmTestConfig]
@@ -79,6 +82,7 @@ class _RoleTestSpec(TypedDict):
 
 class InterfaceTestSpec(TypedDict):
     """The tests, schema, and charms for both roles of a given relation interface version."""
+
     provider: _RoleTestSpec
     requirer: _RoleTestSpec
 
@@ -111,10 +115,10 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
     return module
 
 
-def get_schemas(file: Path) -> Dict[Literal['requirer', 'provider'], Type[DataBagSchema]]:
+def get_schemas(file: Path) -> Dict[Literal["requirer", "provider"], Type[DataBagSchema]]:
     """Load databag schemas from schema.py file."""
     if not file.exists():
-        logger.warning(f'File does not exist: {file}')
+        logger.warning(f"File does not exist: {file}")
         return {}
 
     try:
@@ -124,14 +128,12 @@ def get_schemas(file: Path) -> Dict[Literal['requirer', 'provider'], Type[DataBa
         return {}
 
     out = {}
-    for role, name in (("provider", "ProviderSchema"),
-                       ("requirer", "RequirerSchema")):
+    for role, name in (("provider", "ProviderSchema"), ("requirer", "RequirerSchema")):
         try:
             out[role] = get_schema_from_module(module, name)
         except NameError:
             logger.warning(
-                f"Failed to load {name} from {file}: "
-                f"schema not defined for role: {role}."
+                f"Failed to load {name} from {file}: " f"schema not defined for role: {role}."
             )
         except TypeError as e:
             logger.error(
@@ -139,14 +141,6 @@ def get_schemas(file: Path) -> Dict[Literal['requirer', 'provider'], Type[DataBa
                 f"expecting a DataBagSchema subclass, not {e.args[0]!r}."
             )
     return out
-
-
-def _gather_schema_for_version(
-        version_dir: Path,
-) -> Tuple[Optional[Type[DataBagSchema]], Optional[Type[DataBagSchema]]]:
-    """Collect the interface schema from a directory containing an interface version spec."""
-    schema_location = version_dir / "schema.py"
-    return get_schemas()
 
 
 def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec]:
@@ -168,14 +162,16 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
     if not charms:
         return None
 
-    providers = charms.get('providers', [])
-    requirers = charms.get('requirers', [])
+    providers = charms.get("providers", [])
+    requirers = charms.get("requirers", [])
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
-        raise TypeError(f'{charms_yaml} file has unexpected providers/requirers spec; '
-                        f'expected two lists of dicts (yaml mappings); '
-                        f'got {type(providers)}/{type(requirers)}. '
-                        f'Invalid charms.yaml format.')
+        raise TypeError(
+            f"{charms_yaml} file has unexpected providers/requirers spec; "
+            f"expected two lists of dicts (yaml mappings); "
+            f"got {type(providers)}/{type(requirers)}. "
+            f"Invalid charms.yaml format."
+        )
 
     provider_configs = []
     requirer_configs = []
@@ -184,21 +180,18 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
             try:
                 cfg = _CharmTestConfig(**item)
             except TypeError:
-                logger.error(f'failure parsing {item} to _CharmTestConfig; invalid charm test '
-                             f'configuration in {version_dir}/charms.yaml:providers')
+                logger.error(
+                    f"failure parsing {item} to _CharmTestConfig; invalid charm test "
+                    f"configuration in {version_dir}/charms.yaml:providers"
+                )
                 continue
             destination.append(cfg)
 
-    spec: _CharmsDotYamlSpec = {
-        'providers': provider_configs,
-        'requirers': requirer_configs
-    }
+    spec: _CharmsDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
     return spec
 
 
-def _gather_test_cases_for_version(
-        version_dir: Path, interface_name: str, version: int
-):
+def _gather_test_cases_for_version(version_dir: Path, interface_name: str, version: int):
     """Collect interface test cases from a directory containing an interface version spec."""
 
     interface_tests_dir = version_dir / "interface_tests"
@@ -220,12 +213,8 @@ def _gather_test_cases_for_version(
                 continue
 
             cases = get_registered_test_cases()
-            provider_test_cases.extend(
-                cases[(interface_name, version, Role.provider)]
-            )
-            requirer_test_cases.extend(
-                cases[(interface_name, version, Role.requirer)]
-            )
+            provider_test_cases.extend(cases[(interface_name, version, Role.provider)])
+            requirer_test_cases.extend(cases[(interface_name, version, Role.requirer)])
 
         if not (requirer_test_cases or provider_test_cases):
             logger.error(f"no valid test case files found in {interface_tests_dir}")
@@ -236,7 +225,7 @@ def _gather_test_cases_for_version(
 
 
 def gather_test_spec_for_version(
-        version_dir: Path, interface_name: str, version: int
+    version_dir: Path, interface_name: str, version: int
 ) -> InterfaceTestSpec:
     """Collect interface tests from an interface/version subdirectory.
 
@@ -247,24 +236,26 @@ def gather_test_spec_for_version(
     provider_test_cases, requirer_test_cases = _gather_test_cases_for_version(
         version_dir, interface_name, version
     )
-    schemas = get_schemas(version_dir)
+    schemas = get_schemas(version_dir / "schema.py")
     charms = _gather_charms_for_version(version_dir)
 
     return {
         "provider": {
             "tests": provider_test_cases,
-            "schema": schemas.get('provider'),
+            "schema": schemas.get("provider"),
             "charms": charms.get("providers", []) if charms else [],
         },
         "requirer": {
             "tests": requirer_test_cases,
-            "schema": schemas.get('requirer'),
+            "schema": schemas.get("requirer"),
             "charms": charms.get("requirers", []) if charms else [],
         },
     }
 
 
-def _gather_tests_for_interface(interface_dir: Path, interface_name: str) -> Dict[str, InterfaceTestSpec]:
+def _gather_tests_for_interface(
+    interface_dir: Path, interface_name: str
+) -> Dict[str, InterfaceTestSpec]:
     """Collect interface tests from an interface subdirectory.
 
     Given a directory containing an interface specification (conform the template),
@@ -275,9 +266,7 @@ def _gather_tests_for_interface(interface_dir: Path, interface_name: str) -> Dic
         try:
             version_n = int(version_dir.name[1:])
         except TypeError:
-            logger.error(
-                f"Unable to parse version {version_dir.name} as an integer. Skipping..."
-            )
+            logger.error(f"Unable to parse version {version_dir.name} as an integer. Skipping...")
             continue
         tests[version_dir.name] = gather_test_spec_for_version(
             version_dir, interface_name, version_n
@@ -304,8 +293,6 @@ def collect_tests(path: Path, include: str = "*") -> Dict[str, Dict[str, Interfa
         if interface_dir_name.startswith("__"):  # ignore __template__ and python-dirs
             continue  # skip
         interface_name = interface_dir_name.replace("-", "_")
-        tests[interface_name] = _gather_tests_for_interface(
-            interface_dir, interface_name
-        )
+        tests[interface_name] = _gather_tests_for_interface(interface_dir, interface_name)
 
     return tests

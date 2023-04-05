@@ -47,6 +47,7 @@ class Role(str, Enum):
 @dataclasses.dataclass
 class _InterfaceTestCase:
     """Data associated with a single interface test case."""
+
     interface_name: str
     """The name of the interface that this test is about."""
     version: int
@@ -87,10 +88,10 @@ def get_registered_test_cases() -> _TestCaseCacheType:
 
 def get_interface_name_and_version(fn: Callable) -> Tuple[str, int]:
     f"""Return the interface name and version of a test case validator function.
-    
-    It assumes that the function is in a module whose path matches the following regex: 
+
+    It assumes that the function is in a module whose path matches the following regex:
     {INTF_NAME_AND_VERSION_REGEX}
-    
+
     If that can't be matched, it will raise a InvalidTestCase.
     """
 
@@ -107,8 +108,7 @@ def get_interface_name_and_version(fn: Callable) -> Tuple[str, int]:
     except TypeError:
         # overly cautious: the regex should already be only matching digits.
         raise InvalidTestCase(
-            f"Unable to cast version {version_str} to integer. "
-            f"Check file location: {file}."
+            f"Unable to cast version {version_str} to integer. " f"Check file location: {file}."
         )
     return interface_name, version_int
 
@@ -145,13 +145,11 @@ def check_test_case_validator_signature(fn: Callable):
 
 
 def interface_test_case(
-        role: Union[Role, "RoleLiteral"],
-        event: Union[str, Event],
-        input_state: Optional[State] = None,
-        name: str = None,
-        schema: Union[
-            DataBagSchema, SchemaConfig, "_SchemaConfigLiteral"
-        ] = SchemaConfig.default,
+    role: Union[Role, "RoleLiteral"],
+    event: Union[str, Event],
+    input_state: Optional[State] = None,
+    name: str = None,
+    schema: Union[DataBagSchema, SchemaConfig, "_SchemaConfigLiteral"] = SchemaConfig.default,
 ):
     """Decorator to register a function as an interface test case.
     The decorated function must take exactly one positional argument of type State.

@@ -5,13 +5,12 @@ import typer
 from interface_tester.collector import collect_tests, _CharmTestConfig
 from interface_tester.interface_test import _InterfaceTestCase, SchemaConfig
 
+
 def pprint_tests(
-        path: Path = typer.Argument(
-            Path(),
-            help="Path to the root of a charm-relation-interfaces-compliant repository root."),
-        include: str = typer.Option(
-            "*",
-            help="String for globbing interface names.")
+    path: Path = typer.Argument(
+        Path(), help="Path to the root of a charm-relation-interfaces-compliant repository root."
+    ),
+    include: str = typer.Option("*", help="String for globbing interface names."),
 ):
     """Pretty-print a listing of the interface tests specified in a charm-relation-interfaces repository."""
     return _pprint_tests(path, include)
@@ -19,18 +18,14 @@ def pprint_tests(
 
 def _pprint_tests(path: Path = Path(), include="*"):
     """Pretty-print a listing of the interface tests specified in this repository."""
-    print(f'collecting tests from root = {path.absolute()}...')
+    print(f"collecting tests from root = {path.absolute()}...")
     tests = collect_tests(path=path, include=include)
-    print('Discovered:')
+    print("Discovered:")
 
     def pprint_case(case: "_InterfaceTestCase"):
         state = "yes" if case.input_state else "no"
-        schema_config = (
-            case.schema if isinstance(case.schema, SchemaConfig) else "custom"
-        )
-        print(
-            f"      - {case.name}:: {case.event} (state={state}, schema={schema_config})"
-        )
+        schema_config = case.schema if isinstance(case.schema, SchemaConfig) else "custom"
+        print(f"      - {case.name}:: {case.event} (state={state}, schema={schema_config})")
 
     for interface, versions in tests.items():
         if not versions:

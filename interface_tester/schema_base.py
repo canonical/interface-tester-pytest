@@ -40,5 +40,6 @@ class DataBagSchema(BaseModel):
     By using pydantic's validator API, you can specify further constraints on the values,
     provide defaults, enforce encoding/decoding, and more.
     """
+
     unit: Optional[BaseModel] = None
     app: Optional[BaseModel] = None

@@ -12,11 +12,9 @@ if typing.TYPE_CHECKING:
     from .interface_test import _InterfaceTestCase
 
 
-def _assert_case_plays(event: Event, state: State,
-                       charm_type: Type["CharmBase"],
-                       meta,
-                       actions,
-                       config) -> State:
+def _assert_case_plays(
+    event: Event, state: State, charm_type: Type["CharmBase"], meta, actions, config
+) -> State:
     try:
         state_out = state.trigger(
             event,
@@ -26,7 +24,9 @@ def _assert_case_plays(event: Event, state: State,
             config=config,
         )
     except Exception as e:
-        msg = f"Failed check 1: scenario errored out: ({type(e).__name__}){e}. Could not play scene."
+        msg = (
+            f"Failed check 1: scenario errored out: ({type(e).__name__}){e}. Could not play scene."
+        )
         raise RuntimeError(msg) from e
     return state_out
 
@@ -62,17 +62,12 @@ def _assert_schema_valid(schema: DataBagSchema, relation: Relation) -> None:
 
 
 def _assert_schemas_valid(
-        test: "_InterfaceTestCase",
-        state_out: State,
-        schema: DataBagSchema,
-        interface_name: str
+    test: "_InterfaceTestCase", state_out: State, schema: DataBagSchema, interface_name: str
 ) -> List[str]:
     """Check that all relations using the interface comply with the provided schema."""
     test_schema = test.schema
     if test_schema is SchemaConfig.skip:
-        logger.info(
-            "Schema validation skipped as per interface_test_case schema config."
-        )
+        logger.info("Schema validation skipped as per interface_test_case schema config.")
         return []
 
     if test_schema == SchemaConfig.default:
@@ -88,9 +83,7 @@ def _assert_schemas_valid(
         )
 
     errors = []
-    for relation in [
-        r for r in state_out.relations if r.interface == interface_name
-    ]:
+    for relation in [r for r in state_out.relations if r.interface == interface_name]:
         try:
             _assert_schema_valid(schema=schema, relation=relation)
         except RuntimeError as e:
@@ -99,17 +92,17 @@ def _assert_schemas_valid(
 
 
 def run_test_case(
-        test: "_InterfaceTestCase",
-        schema: Optional["DataBagSchema"],
-        event: Event,
-        state: State,
-        interface_name: str,
-        # the charm type we're testing
-        charm_type: Type["CharmBase"],
-        # charm metadata yamls
-        meta: Dict,
-        config: Dict,
-        actions: Dict,
+    test: "_InterfaceTestCase",
+    schema: Optional["DataBagSchema"],
+    event: Event,
+    state: State,
+    interface_name: str,
+    # the charm type we're testing
+    charm_type: Type["CharmBase"],
+    # charm metadata yamls
+    meta: Dict,
+    config: Dict,
+    actions: Dict,
 ) -> List[str]:
     """Run an interface test case.
 
@@ -126,10 +119,14 @@ def run_test_case(
 
     logger.info("check 1: scenario play")
     try:
-        state_out = _assert_case_plays(event=event, state=state,
-                                       charm_type=charm_type,
-                                       meta=meta, config=config,
-                                       actions=actions)
+        state_out = _assert_case_plays(
+            event=event,
+            state=state,
+            charm_type=charm_type,
+            meta=meta,
+            config=config,
+            actions=actions,
+        )
     except RuntimeError as e:
         errors.append(e.args[0])
         logger.info("scenario couldn't run: aborting test.")
@@ -146,6 +143,9 @@ def run_test_case(
     if not schema:
         logger.info("schema validation step skipped: no schema provided")
         return errors
-    errors.extend(_assert_schemas_valid(test=test, state_out=state_out,
-                                        schema=schema, interface_name=interface_name))
+    errors.extend(
+        _assert_schemas_valid(
+            test=test, state_out=state_out, schema=schema, interface_name=interface_name
+        )
+    )
     return errors

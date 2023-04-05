@@ -40,10 +40,10 @@ Role = Literal["provider", "requirer"]
 
 class InterfaceTester:
     def __init__(
-            self,
-            repo: str = "https://github.com/canonical/charm-relation-interfaces",
-            branch: str = "main",
-            base_path: str = "interfaces",
+        self,
+        repo: str = "https://github.com/canonical/charm-relation-interfaces",
+        branch: str = "main",
+        base_path: str = "interfaces",
     ):
         self._repo = repo
         self._branch = branch
@@ -61,18 +61,18 @@ class InterfaceTester:
         self._charm_spec_cache = None
 
     def configure(
-            self,
-            *,
-            charm_type: Optional[Type[CharmType]] = None,
-            repo: Optional[str] = None,
-            branch: Optional[str] = None,
-            base_path: Optional[str] = None,
-            interface_name: Optional[str] = None,
-            interface_version: Optional[int] = None,
-            state_template: Optional[State] = None,
-            meta: Optional[Dict[str, Any]] = None,
-            actions: Optional[Dict[str, Any]] = None,
-            config: Optional[Dict[str, Any]] = None,
+        self,
+        *,
+        charm_type: Optional[Type[CharmType]] = None,
+        repo: Optional[str] = None,
+        branch: Optional[str] = None,
+        base_path: Optional[str] = None,
+        interface_name: Optional[str] = None,
+        interface_version: Optional[int] = None,
+        state_template: Optional[State] = None,
+        meta: Optional[Dict[str, Any]] = None,
+        actions: Optional[Dict[str, Any]] = None,
+        config: Optional[Dict[str, Any]] = None,
     ):
         """
 
@@ -119,17 +119,14 @@ class InterfaceTester:
         if not self._charm_type:
             errors.append("Tester misconfigured: needs a charm_type set.")
         if not self.meta:
-            errors.append(
-                "no metadata: it was not provided, and it cannot be autoloaded"
-            )
+            errors.append("no metadata: it was not provided, and it cannot be autoloaded")
         if not self._repo:
             errors.append("repo missing")
         if not self._interface_name:
             errors.append("interface_name missing")
         if self._state_template and not isinstance(self._state_template, State):
             errors.append(
-                f"state_template should be of type State, "
-                f"not: {type(self._state_template)}"
+                f"state_template should be of type State, " f"not: {type(self._state_template)}"
             )
         if errors:
             err = "\n".join(errors)
@@ -196,11 +193,11 @@ class InterfaceTester:
 
             repo_name = self._repo.split("/")[-1]
             intf_spec_path = (
-                    Path(tempdir)
-                    / repo_name
-                    / self._base_path
-                    / self._interface_name.replace("-", "_")
-                    / f"v{self._interface_version}"
+                Path(tempdir)
+                / repo_name
+                / self._base_path
+                / self._interface_name.replace("-", "_")
+                / f"v{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
@@ -235,9 +232,7 @@ class InterfaceTester:
             # are then meant for a charm implementing the other role.
 
             endpoints_for_interface = [
-                k
-                for k, v in endpoints.items()
-                if v["interface"] == self._interface_name
+                k for k, v in endpoints.items() if v["interface"] == self._interface_name
             ]
 
             if endpoints_for_interface:
@@ -248,10 +243,8 @@ class InterfaceTester:
         return supported_endpoints
 
     def _yield_tests(
-            self,
-    ) -> Generator[
-        Tuple["_InterfaceTestCase", "DataBagSchema", Event, State], None, None
-    ]:
+        self,
+    ) -> Generator[Tuple["_InterfaceTestCase", "DataBagSchema", Event, State], None, None]:
         """Yield all test cases applicable to this charm and interface.
 
         This means:
@@ -274,9 +267,7 @@ class InterfaceTester:
 
         supported_endpoints = self._gather_supported_endpoints()
         if not supported_endpoints:
-            raise RuntimeError(
-                f"this charm does not declare any endpoint using {interface_name}."
-            )
+            raise RuntimeError(f"this charm does not declare any endpoint using {interface_name}.")
 
         role: Role
         for role in supported_endpoints:
@@ -307,9 +298,7 @@ class InterfaceTester:
                 state.relations = relations
 
                 # the Relation instance this test is about:
-                relation = next(
-                    filter(lambda r: r.interface == self._interface_name, relations)
-                )
+                relation = next(filter(lambda r: r.interface == self._interface_name, relations))
                 # test.EVENT might be a string or an Event. Cast to Event.
                 evt = self._coerce_event(test.event, relation)
 
@@ -387,7 +376,7 @@ class InterfaceTester:
             )
 
     def _generate_relations_state(
-            self, state_template: State, input_state: State, supported_endpoints, role: Role
+        self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 
@@ -449,4 +438,3 @@ class InterfaceTester:
             f"{self}: merged {input_state} and {state_template} --> relations={relations}"
         )
         return relations
-

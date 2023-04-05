@@ -93,4 +93,3 @@ def test_get_schema_from_module_bad_name(tmp_path, schema_name):
     # fails because it's not found in the module
     with pytest.raises(NameError):
         get_schema_from_module(module, schema_name)
-
