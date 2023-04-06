@@ -25,7 +25,7 @@ FOO = 1
     (
         (
             dedent(
-                """from interfaces.schema_base import DataBagSchema
+                """from interface_tester.schema_base import DataBagSchema
                 
 class RequirerSchema(DataBagSchema):
     foo = 1"""
@@ -35,7 +35,7 @@ class RequirerSchema(DataBagSchema):
         ),
         (
             dedent(
-                """from interfaces.schema_base import DataBagSchema
+                """from interface_tester.schema_base import DataBagSchema
 class ProviderSchema(DataBagSchema):
     foo = 2"""
             ),
@@ -44,7 +44,7 @@ class ProviderSchema(DataBagSchema):
         ),
         (
             dedent(
-                """from interfaces.schema_base import DataBagSchema
+                """from interface_tester.schema_base import DataBagSchema
 class Foo(DataBagSchema):
     foo = 3"""
             ),
@@ -57,15 +57,8 @@ def test_collect_tests(tmp_path, schema_source, schema_name, foo_value):
     # unique filename else it will load the wrong module
     root = Path(tmp_path)
     intf = root / 'interfaces'
-    schemabase = intf / 'schema_base.py'
     version = intf / f'my{schema_name}' / 'v0'
     version.mkdir(parents=True)
-
-    schemabase.write_text(dedent("""
-    from pydantic import BaseModel
-    class DataBagSchema(BaseModel):
-        pass
-    """))
     (version / f"schema.py").write_text(schema_source)
 
     tests = collect_tests(root)
