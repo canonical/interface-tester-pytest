@@ -283,12 +283,21 @@ def collect_tests(path: Path, include: str = "*") -> Dict[str, Dict[str, Interfa
             - name: foo
               url: www.github.com/canonical/foo
     """
+    logger.info(f"collecting tests from {path}:{include}")
     tests = {}
-    for interface_dir in (path / "interfaces").glob(include):
-        interface_dir_name = interface_dir.name
-        if interface_dir_name.startswith("__"):  # ignore __template__ and python-dirs
-            continue  # skip
-        interface_name = interface_dir_name.replace("-", "_")
-        tests[interface_name] = _gather_tests_for_interface(interface_dir, interface_name)
+    sys.path.append(str(path))
+
+    try:
+        for interface_dir in (path / "interfaces").glob(include):
+            interface_dir_name = interface_dir.name
+            if interface_dir_name.startswith("__"):  # ignore __template__ and python-dirs
+                continue  # skip
+            logger.info(f"collecting tests for interface {interface_dir_name}")
+            interface_name = interface_dir_name.replace("-", "_")
+            tests[interface_name] = _gather_tests_for_interface(interface_dir, interface_name)
+
+    finally:
+        # cleanup
+        sys.path.remove(str(path))
 
     return tests
