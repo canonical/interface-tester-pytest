@@ -3,7 +3,7 @@ from textwrap import dedent
 
 import pytest
 
-from interface_tester.collector import get_schema_from_module, load_schema_module
+from interface_tester.collector import get_schema_from_module, load_schema_module, collect_tests
 
 
 def test_load_schema_module(tmp_path):
@@ -21,12 +21,13 @@ FOO = 1
 
 
 @pytest.mark.parametrize(
-    "module_contents, schema_name, foo_value",
+    "schema_source, schema_name, foo_value",
     (
         (
             dedent(
-                """import pydantic
-class RequirerSchema(pydantic.BaseModel):
+                """from interfaces.schema_base import DataBagSchema
+                
+class RequirerSchema(DataBagSchema):
     foo = 1"""
             ),
             "RequirerSchema",
@@ -34,8 +35,8 @@ class RequirerSchema(pydantic.BaseModel):
         ),
         (
             dedent(
-                """import pydantic
-class ProviderSchema(pydantic.BaseModel):
+                """from interfaces.schema_base import DataBagSchema
+class ProviderSchema(DataBagSchema):
     foo = 2"""
             ),
             "ProviderSchema",
@@ -43,8 +44,8 @@ class ProviderSchema(pydantic.BaseModel):
         ),
         (
             dedent(
-                """import pydantic
-class Foo(pydantic.BaseModel):
+                """from interfaces.schema_base import DataBagSchema
+class Foo(DataBagSchema):
     foo = 3"""
             ),
             "Foo",
@@ -52,28 +53,37 @@ class Foo(pydantic.BaseModel):
         ),
     ),
 )
-def test_get_schema_from_module(tmp_path, module_contents, schema_name, foo_value):
+def test_collect_tests(tmp_path, schema_source, schema_name, foo_value):
     # unique filename else it will load the wrong module
-    pth = Path(tmp_path) / f"bar{schema_name}.py"
-    pth.write_text(module_contents)
-    module = load_schema_module(pth)
+    root = Path(tmp_path)
+    intf = root / 'interfaces'
+    schemabase = intf / 'schema_base.py'
+    version = intf / f'my{schema_name}' / 'v0'
+    version.mkdir(parents=True)
 
-    requirer_schema = get_schema_from_module(module, schema_name)
-    assert requirer_schema.__fields__["foo"].default == foo_value
+    schemabase.write_text(dedent("""
+    from pydantic import BaseModel
+    class DataBagSchema(BaseModel):
+        pass
+    """))
+    (version / f"schema.py").write_text(schema_source)
+
+    tests = collect_tests(root)
+    assert tests[f"my{schema_name}"]['v0']['requirer']['schema']
 
 
 @pytest.mark.parametrize(
-    "module_contents, schema_name",
+    "schema_source, schema_name",
     (
         (dedent("""Foo2=1"""), "Foo2"),
         (dedent("""Bar='baz'"""), "Bar"),
         (dedent("""Baz=[1,2,3]"""), "Baz"),
     ),
 )
-def test_get_schema_from_module_wrong_type(tmp_path, module_contents, schema_name):
+def test_get_schema_from_module_wrong_type(tmp_path, schema_source, schema_name):
     # unique filename else it will load the wrong module
     pth = Path(tmp_path) / f"bar{schema_name}.py"
-    pth.write_text(module_contents)
+    pth.write_text(schema_source)
     module = load_schema_module(pth)
 
     # fails because it's not a pydantic model
