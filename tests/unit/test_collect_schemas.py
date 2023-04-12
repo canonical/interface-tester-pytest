@@ -20,49 +20,64 @@ FOO = 1
     assert module.FOO == 1
 
 
-@pytest.mark.parametrize(
-    "schema_source, schema_name, foo_value",
-    (
-        (
-            dedent(
-                """from interface_tester.schema_base import DataBagSchema
-                
-class RequirerSchema(DataBagSchema):
-    foo = 1"""
-            ),
-            "RequirerSchema",
-            1,
-        ),
-        (
-            dedent(
-                """from interface_tester.schema_base import DataBagSchema
-class ProviderSchema(DataBagSchema):
-    foo = 2"""
-            ),
-            "ProviderSchema",
-            2,
-        ),
-        (
-            dedent(
-                """from interface_tester.schema_base import DataBagSchema
-class Foo(DataBagSchema):
-    foo = 3"""
-            ),
-            "Foo",
-            3,
-        ),
-    ),
-)
-def test_collect_tests(tmp_path, schema_source, schema_name, foo_value):
+def test_collect_schemas(tmp_path):
     # unique filename else it will load the wrong module
     root = Path(tmp_path)
     intf = root / 'interfaces'
-    version = intf / f'my{schema_name}' / 'v0'
+    version = intf / f'mytestinterface' / 'v0'
     version.mkdir(parents=True)
-    (version / f"schema.py").write_text(schema_source)
+    (version / f"schema.py").write_text(dedent(
+        """from interface_tester.schema_base import DataBagSchema
+                
+class RequirerSchema(DataBagSchema):
+    foo = 1"""
+            ))
 
     tests = collect_tests(root)
-    assert tests[f"my{schema_name}"]['v0']['requirer']['schema']
+    assert tests[f"mytestinterface"]['v0']['requirer']['schema']
+
+
+def test_collect_schemas_multiple(tmp_path):
+    # unique filename else it will load the wrong module
+    root = Path(tmp_path)
+    intf = root / 'interfaces'
+    version = intf / f'mytestinterfacea' / 'v0'
+    version.mkdir(parents=True)
+    (version / f"schema.py").write_text(dedent(
+        """from interface_tester.schema_base import DataBagSchema
+
+class RequirerSchema(DataBagSchema):
+    foo = 1"""
+    ))
+
+    version = intf / f'mytestinterfaceb' / 'v0'
+    version.mkdir(parents=True)
+    (version / f"schema.py").write_text(dedent(
+        """from interface_tester.schema_base import DataBagSchema
+
+class RequirerSchema(DataBagSchema):
+    foo = 2"""
+    ))
+
+    tests = collect_tests(root)
+    assert tests[f"mytestinterfacea"]['v0']['requirer']['schema'].__fields__['foo'].default == 1
+    assert tests[f"mytestinterfaceb"]['v0']['requirer']['schema'].__fields__['foo'].default == 2
+
+
+def test_collect_invalid_schemas(tmp_path):
+    # unique filename else it will load the wrong module
+    root = Path(tmp_path)
+    intf = root / 'interfaces'
+    version = intf / f'mytestinterface2' / 'v0'
+    version.mkdir(parents=True)
+    (version / f"schema.py").write_text(dedent(
+        """from interface_tester.schema_base import DataBagSchema
+class ProviderSchema(DataBagSchema):
+    foo = 2"""
+    ))
+
+    tests = collect_tests(root)
+    assert tests[f"mytestinterface2"]['v0']['requirer']['schema'] is None
 
 
 @pytest.mark.parametrize(

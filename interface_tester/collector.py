@@ -100,12 +100,18 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
 
     # strip .py
     module_name = str(schema_path.with_suffix("").name)
+
+    # if a previous call to load_schema_module has loaded a
+    # module with the same name, this will conflict.
+    if module_name in sys.modules:
+        del sys.modules[module_name]
+
     try:
         module = importlib.import_module(module_name)
     except ImportError:
         raise
     finally:
-        # cleanup, just in case
+        # cleanup
         sys.path.remove(str(schema_path.parent))
 
     return module
