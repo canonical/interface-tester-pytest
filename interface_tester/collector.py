@@ -105,8 +105,10 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
     except ImportError:
         raise
     finally:
-        # cleanup, just in case
+        # cleanup
         sys.path.remove(str(schema_path.parent))
+        # next time reimport from scratch.
+        del sys.modules[module_name]
 
     return module
 
