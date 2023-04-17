@@ -79,7 +79,7 @@ You can customize name and location of the fixture, but you will need to include
   - name: my-charm-name  # required
     url: https://github.com/foo/my-charm-name  # required
     test_setup:  # optional
-      location: path/to/file.py  # optional; default = tests/interfaces/conftest.py
+      location: path/to/file.py  # optional; default = tests/interface/conftest.py
       identifier: my_fixture_name # optional; default = interface_tester
 ```
 
