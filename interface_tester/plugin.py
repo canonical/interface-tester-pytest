@@ -27,7 +27,7 @@ from .errors import (
     InterfaceTesterValidationError,
     InterfaceTestsFailed,
     InvalidTestCaseError,
-    NoTestsRan,
+    NoTestsRun,
 )
 from .runner import run_test_case
 from .schema_base import DataBagSchema
@@ -361,7 +361,7 @@ class InterfaceTester:
         if not ran_some:
             msg = f"no tests gathered for {self._interface_name}/v{self._interface_version}"
             logger.warning(msg)
-            raise NoTestsRan(msg)
+            raise NoTestsRun(msg)
 
     def _coerce_event(self, raw_event: Union[str, Event], relation: Relation) -> Event:
         # if the event being tested is a relation event, we need to inject some metadata

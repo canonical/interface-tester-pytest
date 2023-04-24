@@ -12,5 +12,5 @@ class InterfaceTestsFailed(RuntimeError):
     """Raised if interface tests completed with errors."""
 
 
-class NoTestsRan(RuntimeError):
+class NoTestsRun(RuntimeError):
     """Raised if no interface test was collected during a run() call."""
