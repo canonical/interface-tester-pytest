@@ -316,16 +316,17 @@ class InterfaceTester:
                 yield test, spec["schema"], evt, modified_state
 
     def __repr__(self):
-        return """_repo
-        _branch
-        _base_path
-        _charm_type
-        _meta
-        _actions
-        _config
-        _interface_name
-        _interface_version
-        _state_template"""
+        return f"""<Interface Tester: 
+        \trepo={self._repo}\n
+        \tbranch={self._branch}\n
+        \tbase_path={self._base_path}\n
+        \tcharm_type={self._charm_type}\n
+        \tmeta={self._meta}\n
+        \tactions={self._actions}\n
+        \tconfig={self._config}\n
+        \tinterface_name={self._interface_name}\n
+        \tinterface_version={self._interface_version}\n
+        \tstate_template={self._state_template}>"""
 
     def run(self) -> bool:
         """Run interface tests.
