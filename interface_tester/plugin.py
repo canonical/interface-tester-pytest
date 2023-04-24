@@ -131,6 +131,8 @@ class InterfaceTester:
             errors.append("repo missing")
         if not self._interface_name:
             errors.append("interface_name missing")
+        if not isinstance(self._interface_version, int):
+            errors.append("interface_version should be an integer")
         if self._state_template and not isinstance(self._state_template, State):
             errors.append(
                 f"state_template should be of type State, " f"not: {type(self._state_template)}"
@@ -204,7 +206,7 @@ class InterfaceTester:
                 / repo_name
                 / self._base_path
                 / self._interface_name.replace("-", "_")
-                / f"v{self._interface_version}"
+                / f"{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
