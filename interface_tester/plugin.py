@@ -206,7 +206,7 @@ class InterfaceTester:
                 / repo_name
                 / self._base_path
                 / self._interface_name.replace("-", "_")
-                / f"{self._interface_version}"
+                / f"v{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
