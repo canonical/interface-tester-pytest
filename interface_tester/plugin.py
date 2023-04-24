@@ -209,9 +209,8 @@ class InterfaceTester:
             if not intf_spec_path.exists():
                 raise RuntimeError(
                     f"interface spec dir not found at expected location. "
-                    f"Check that {repo_name}/{self._base_path}/{self._interface_name} "
-                    f"is a valid path in the remote repo you've selected as test case source "
-                    f"for the plugin."
+                    f"Check that {intf_spec_path} is a valid path in the remote repo you've "
+                    f"selected as test case source for this run."
                 )
 
             tests = gather_test_spec_for_version(
