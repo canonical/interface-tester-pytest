@@ -318,15 +318,15 @@ class InterfaceTester:
 
     def __repr__(self):
         return f"""<Interface Tester: 
-        \trepo={self._repo}\n
-        \tbranch={self._branch}\n
-        \tbase_path={self._base_path}\n
-        \tcharm_type={self._charm_type}\n
-        \tmeta={self._meta}\n
-        \tactions={self._actions}\n
-        \tconfig={self._config}\n
-        \tinterface_name={self._interface_name}\n
-        \tinterface_version={self._interface_version}\n
+        \trepo={self._repo}
+        \tbranch={self._branch}
+        \tbase_path={self._base_path}
+        \tcharm_type={self._charm_type}
+        \tmeta={self._meta}
+        \tactions={self._actions}
+        \tconfig={self._config}
+        \tinterface_name={self._interface_name}
+        \tinterface_version={self._interface_version}
         \tstate_template={self._state_template}>"""
 
     def run(self) -> bool:
