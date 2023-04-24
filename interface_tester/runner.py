@@ -116,8 +116,8 @@ def run_test_case(
     It will return a list of strings, representing any issues encountered in any of the checks.
     """
     errors: List[str] = []
-
-    logger.info("check 1: scenario play")
+    logger.info(f"running test {test.name!r}")
+    logger.info("check 1/3: scenario play")
     try:
         state_out = _assert_case_plays(
             event=event,
@@ -132,14 +132,14 @@ def run_test_case(
         logger.error("scenario couldn't run: aborting test.", exc_info=True)
         return errors
 
-    logger.info("check 2: scenario output state validation")
+    logger.info("check 2/3: scenario output state validation")
     # todo: consistency check? or should we rely on scenario's?
     try:
         _assert_state_out_valid(state_out=state_out, test=test)
     except RuntimeError as e:
         errors.append(e.args[0])
 
-    logger.info("check 3: databag schema validation")
+    logger.info("check 3/3: databag schema validation")
     if not schema:
         logger.info("schema validation step skipped: no schema provided")
         return errors
