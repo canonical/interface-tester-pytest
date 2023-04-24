@@ -12,7 +12,7 @@ def pprint_tests(
     ),
     include: str = typer.Option("*", help="String for globbing interface names."),
 ):
-    """Pretty-print a listing of the interface tests specified in a charm-relation-interfaces repository."""
+    """Pretty-print a listing of the interface tests specified in charm-relation-interfaces."""
     return _pprint_tests(path, include)
 
 
@@ -49,13 +49,13 @@ def _pprint_tests(path: Path = Path(), include="*"):
                 for test_cls in tests:
                     pprint_case(test_cls)
                 if not tests:
-                    print(f"     - <no tests>")
+                    print("     - <no tests>")
 
                 if schema:
                     # todo: check if unit/app are given.
-                    print(f"     - schema OK")
+                    print("     - schema OK")
                 else:
-                    print(f"     - schema NOT OK")
+                    print("     - schema NOT OK")
 
                 charms = test_spec["charms"]
                 if charms:
@@ -63,7 +63,7 @@ def _pprint_tests(path: Path = Path(), include="*"):
                     charm: _CharmTestConfig
                     for charm in charms:
                         if isinstance(charm, str):
-                            print(f"       - <BADLY FORMATTED>")
+                            print("       - <BADLY FORMATTED>")
                             continue
 
                         custom_test_setup = "yes" if charm.test_setup else "no"

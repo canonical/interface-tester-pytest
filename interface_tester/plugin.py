@@ -110,7 +110,10 @@ class InterfaceTester:
             self._base_path = base_path
 
     def _validate_config(self):
-        """Validate the state of this object and raise InterfaceTesterValidationError if invalid."""
+        """Validate the configuration of the tester.
+
+        Will raise InterfaceTesterValidationError if something is not right with the config.
+        """
         errors = []
         if (self._actions or self._config) and not self._meta:
             errors.append(
@@ -137,7 +140,7 @@ class InterfaceTester:
 
     @property
     def _charm_spec(self) -> _CharmSpec:
-        """Return the _CharmSpec object representing the charm being tested and all its metadata."""
+        """Return the _CharmSpec object representing the tested charm and its metadata."""
         if not self._charm_spec_cache:
             # We try to use Scenario's internal autoload functionality to autoload the charm spec.
             try:
@@ -178,7 +181,7 @@ class InterfaceTester:
         return self._config or self._charm_spec.config
 
     def _collect_interface_test_specs(self) -> InterfaceTestSpec:
-        """Gathers the test cases as defined in the charm-relation-interfaces repo, for provider and requirer."""
+        """Gathers the test cases as defined by charm-relation-interfaces, for both roles."""
         with tempfile.TemporaryDirectory() as tempdir:
             cmd = f"git clone --depth 1 --branch {self._branch} {self._repo}".split(" ")
             proc = Popen(cmd, cwd=tempdir, stderr=PIPE, stdout=PIPE)
@@ -216,7 +219,7 @@ class InterfaceTester:
         return tests
 
     def _gather_supported_endpoints(self) -> Dict[Literal[Role], List[str]]:
-        """Given a relation interface name, return a list of supported endpoints as either provider or requirer.
+        """Given a relation interface name, return a list of supported endpoints as either role.
 
         These are collected from the charm's metadata.yaml.
         """
@@ -225,11 +228,12 @@ class InterfaceTester:
         for role in ("provider", "requirer"):
             meta_role = ROLE_TO_ROLE_META[role]
 
-            # assuming there's been a _validate_config() before this point, it's safe to access `meta`.
+            # assuming there's been a _validate_config() before this point, it's safe to access
+            # `meta`.
             endpoints = self.meta.get(meta_role, {})
             # if there are no endpoints using this interface, this means that this charm does not
-            # support that role in the relation. There MIGHT still be tests for the other role, but they
-            # are then meant for a charm implementing the other role.
+            # support that role in the relation. There MIGHT still be tests for the other role, but
+            # they are then meant for a charm implementing the other role.
 
             endpoints_for_interface = [
                 k for k, v in endpoints.items() if v["interface"] == self._interface_name
@@ -248,12 +252,14 @@ class InterfaceTester:
         """Yield all test cases applicable to this charm and interface.
 
         This means:
-        - collecting the test cases (InterfaceTestCase objects) as defined by the charm-relation-interfaces
-          specification. These tests encode what it means to satisfy this relation interface, and include some optional
-          set-up logic for the State the test has to be run with.
-        - obtaining the mocker/charm spec, as provided by the charm repo which hosts the source of the charm we
-          are currently testing.
-        - obtain from the charm's metadata.yaml the endpoints supporting this interface (in either role).
+        - collecting the test cases (InterfaceTestCase objects) as defined by the
+          charm-relation-interfaces specification. These tests encode what it means to satisfy this
+          relation interface, and include some optional set-up logic for the State the test has to
+          be run with.
+        - obtaining the mocker/charm spec, as provided by the charm repo which hosts the source of
+          the charm we are currently testing.
+        - obtain from the charm's metadata.yaml the endpoints supporting this interface (in either
+          role).
         - for each endpoint, for each applicable test case, yield: the test case, the schema as
           specified by the interface, the event and the State.
         """
@@ -278,24 +284,23 @@ class InterfaceTester:
             for test in spec["tests"]:
                 logger.debug(f"converting {test} to ")
 
-                # this is the input state as specified by the interface tests writer. It can contain elements
-                # that are required for the relation interface test to work, typically relation data pertaining to the
-                # relation interface being tested.
+                # this is the input state as specified by the interface tests writer. It can
+                # contain elements that are required for the relation interface test to work,
+                # typically relation data pertaining to the  relation interface being tested.
                 input_state = test.input_state
 
-                # state_template is state as specified by the charm being tested, which the charm requires to function
-                # properly. Consider it part of the mocking. For example: some required config, a "happy" status,
-                # network information, OTHER relations. Typically, should NOT touch the relation that this
-                # interface test is about
-                #  -> so we overwrite and warn on conflict: state_template is the baseline, input_state provides the
-                #  relation spec for the relation being tested
-
+                # state_template is state as specified by the charm being tested, which the charm
+                # requires to function properly. Consider it part of the mocking. For example:
+                # some required config, a "happy" status, network information, OTHER relations.
+                # Typically, should NOT touch the relation that this interface test is about
+                #  -> so we overwrite and warn on conflict: state_template is the baseline,
                 state = (self._state_template or State()).copy()
 
                 relations = self._generate_relations_state(
                     state, input_state, supported_endpoints, role
                 )
-                state.relations = relations
+                # State is frozen; replace
+                modified_state = state.replace(relations=relations)
 
                 # the Relation instance this test is about:
                 relation = next(filter(lambda r: r.interface == self._interface_name, relations))
@@ -303,8 +308,8 @@ class InterfaceTester:
                 evt = self._coerce_event(test.event, relation)
 
                 logger.info(f"collected test for {interface_name} with {evt.name}")
-                logger.debug(f"state={state}, evt={evt}")
-                yield test, spec["schema"], evt, state
+                logger.debug(f"state={modified_state}, evt={evt}")
+                yield test, spec["schema"], evt, modified_state
 
     def run(self):
         """Run interface tests."""
@@ -330,6 +335,7 @@ class InterfaceTester:
 
             ran_some = True
 
+        # todo: consider raising custom exceptions here.
         if errors:
             pytest.fail(f"interface tests completed with errors. {errors}")
 
@@ -347,10 +353,12 @@ class InterfaceTester:
             if ep_name and evt_kind:
                 # this is a relation event.
                 # we inject the relation metadata
-                # todo: if the user passes a relation event that is NOT about the relation interface that this test is
-                #  about, at this point we are injecting the wrong Relation instance.
-                #  e.g. if in interfaces/foo one wants to test that if 'bar-relation-joined' is fired...
-                #  then one would have to pass an Event instance already with its own Relation.
+                # todo: if the user passes a relation event that is NOT about the relation
+                #  interface that this test is about, at this point we are injecting the wrong
+                #  Relation instance.
+                #  e.g. if in interfaces/foo one wants to test that if 'bar-relation-joined' is
+                #  fired... then one would have to pass an Event instance already with its
+                #  own Relation.
                 return Event(
                     raw_event,
                     relation=relation.replace(endpoint=ep_name),
@@ -380,9 +388,9 @@ class InterfaceTester:
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 
-        The charm being tested possibly provided a state_template to define some setup mocking data.
-        The interface tests also have an input_state. Here we merge them into one relation list to be passed to
-        the 'final' State the test will run with.
+        The charm being tested possibly provided a state_template to define some setup mocking data
+        The interface tests also have an input_state. Here we merge them into one relation list to
+        be passed to the 'final' State the test will run with.
         """
         interface_name = self._interface_name
 
@@ -401,8 +409,9 @@ class InterfaceTester:
         relations = filter_relations(state_template.relations, op=operator.ne)
 
         if input_state:
-            # if the charm we're testing specified some relations in its input state, we add those whose interface IS
-            # the same as the one we're testing. If other relation interfaces were specified, they will be ignored.
+            # if the charm we're testing specified some relations in its input state, we add those
+            # whose interface IS the same as the one we're testing. If other relation interfaces
+            # were specified, they will be ignored.
             relations.extend(filter_relations(input_state.relations, op=operator.eq))
 
             if ignored := filter_relations(input_state.relations, op=operator.eq):
@@ -411,7 +420,8 @@ class InterfaceTester:
                     f"These will be ignored. details: {ignored}"
                 )
 
-        # if we still don't have any relation matching the interface we're testing, we generate one from scratch.
+        # if we still don't have any relation matching the interface we're testing, we generate
+        # one from scratch.
         if not filter_relations(relations, op=operator.eq):
             # if neither the charm nor the interface specified any custom relation spec for
             # the interface we're testing, we will provide one.

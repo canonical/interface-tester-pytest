@@ -5,6 +5,7 @@ import sys
 from textwrap import dedent
 
 import pytest
+
 from interface_tester.collector import collect_tests
 from interface_tester.interface_test import (
     InvalidTestCase,
@@ -47,9 +48,7 @@ def test_signature_checker_too_many_opt_params():
 @pytest.mark.parametrize("input_state", ("State()", "State(leader=True)"))
 @pytest.mark.parametrize("intf_name", ("foo", "bar"))
 @pytest.mark.parametrize("version", (0, 42))
-def test_registered_test_cases_cache(
-    tmp_path, role, event, input_state, intf_name, version
-):
+def test_registered_test_cases_cache(tmp_path, role, event, input_state, intf_name, version):
     unique_name = "".join(random.choices(string.ascii_letters + string.digits, k=16))
 
     # if the module name is not unique, importing it multiple times will result in royal confusion

@@ -81,6 +81,11 @@ target-version = ["py38"]
 profile = "black"
 
 # Linting tools configuration
+
+[tool.ruff]
+line-length = 99
+target-version = "py311"
+
 [tool.flake8]
 max-line-length = 99
 max-doc-length = 99

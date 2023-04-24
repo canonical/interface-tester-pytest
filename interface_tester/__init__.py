@@ -2,8 +2,9 @@
 # See LICENSE file for licensing details.
 import pytest
 
-from .interface_test import interface_test_case
+from .interface_test import interface_test_case  # noqa: F401
 from .plugin import InterfaceTester
+from .schema_base import DataBagSchema  # noqa: F401
 
 
 @pytest.fixture(scope="function")

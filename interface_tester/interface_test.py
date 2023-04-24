@@ -32,7 +32,8 @@ class SchemaConfig(str, Enum):
     """Class used to program the schema validator run that is paired with each test case."""
 
     default = "default"
-    """Use this value if you want the test case to validate the output state's databags with the default schema."""
+    """Use this value if you want the test case to validate the output state's databags with the 
+    default schema."""
     skip = "skip"
     """Use this value if you want the test case skip schema validation altogether."""
     empty = "empty"

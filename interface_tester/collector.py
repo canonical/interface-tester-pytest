@@ -16,7 +16,7 @@ import logging
 import sys
 import types
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Type, TypedDict
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, TypedDict
 
 import pydantic
 import yaml
@@ -108,7 +108,7 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
 
     # Otherwise we'll get an error when we re-run @validator
     # fixme: is there a better way to do this?
-    logger.debug('Clearing pydantic.class_validators._FUNCS')
+    logger.debug("Clearing pydantic.class_validators._FUNCS")
     pydantic.class_validators._FUNCS.clear()  # noqa
 
     try:
