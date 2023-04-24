@@ -19,12 +19,16 @@ from typing import (
     Union,
 )
 
-import pytest
 from ops.testing import CharmType
 from scenario.state import Event, Relation, State, _CharmSpec
 
 from .collector import InterfaceTestSpec, gather_test_spec_for_version
-from .errors import InterfaceTesterValidationError, InvalidTestCaseError
+from .errors import (
+    InterfaceTesterValidationError,
+    InterfaceTestsFailed,
+    InvalidTestCaseError,
+    NoTestsRan,
+)
 from .runner import run_test_case
 from .schema_base import DataBagSchema
 
@@ -311,10 +315,25 @@ class InterfaceTester:
                 logger.debug(f"state={modified_state}, evt={evt}")
                 yield test, spec["schema"], evt, modified_state
 
-    def run(self):
-        """Run interface tests."""
-        self._validate_config()  # will raise if misconfigured
+    def __repr__(self):
+        return """_repo
+        _branch
+        _base_path
+        _charm_type
+        _meta
+        _actions
+        _config
+        _interface_name
+        _interface_version
+        _state_template"""
 
+    def run(self) -> bool:
+        """Run interface tests.
+
+        Returns True if some tests were found and ran, False otherwise.
+        """
+        self._validate_config()  # will raise if misconfigured
+        logger.info(f"Running {repr(self)}.")
         errors = []
         ran_some = False
 
@@ -337,12 +356,12 @@ class InterfaceTester:
 
         # todo: consider raising custom exceptions here.
         if errors:
-            pytest.fail(f"interface tests completed with errors. {errors}")
+            raise InterfaceTestsFailed(f"interface tests completed with errors. {errors}")
 
         if not ran_some:
             msg = f"no tests gathered for {self._interface_name}/v{self._interface_version}"
             logger.warning(msg)
-            pytest.skip(msg)
+            raise NoTestsRan(msg)
 
     def _coerce_event(self, raw_event: Union[str, Event], relation: Relation) -> Event:
         # if the event being tested is a relation event, we need to inject some metadata

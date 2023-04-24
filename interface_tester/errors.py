@@ -6,3 +6,11 @@ class InterfaceTesterValidationError(ValueError):
 
 class InvalidTestCaseError(RuntimeError):
     """Raised if an interface test case is invalid."""
+
+
+class InterfaceTestsFailed(RuntimeError):
+    """Raised if interface tests completed with errors."""
+
+
+class NoTestsRan(RuntimeError):
+    """Raised if no interface test was collected during a run() call."""
