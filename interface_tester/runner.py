@@ -129,7 +129,7 @@ def run_test_case(
         )
     except RuntimeError as e:
         errors.append(e.args[0])
-        logger.info("scenario couldn't run: aborting test.")
+        logger.error("scenario couldn't run: aborting test.", exc_info=True)
         return errors
 
     logger.info("check 2: scenario output state validation")
