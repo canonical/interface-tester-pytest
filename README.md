@@ -11,7 +11,7 @@ The interface tester package facilitates both these verification flows.
 
 # How to use the interface_tester in the spec repo
 
-Follow the instructions [here](https://github.com/canonical/charm-relation-interfaces/README_INTERFACE_TESTS.md).
+Follow the instructions [here](https://github.com/canonical/charm-relation-interfaces/blob/main/README_INTERFACE_TESTS.md).
 
 # How to use the interface_tester in the charm repo
 
