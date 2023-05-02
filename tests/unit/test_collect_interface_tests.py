@@ -1,4 +1,5 @@
 import importlib
+import inspect
 import random
 import string
 import sys
@@ -43,12 +44,15 @@ def test_signature_checker_too_many_opt_params():
         check_test_case_validator_signature(_foo)
 
 
-@pytest.mark.parametrize("role", list(Role))
+@pytest.mark.parametrize("role", list(Role._value2member_map_))
 @pytest.mark.parametrize("event", ("start", "update-status", "foo-relation-joined"))
 @pytest.mark.parametrize("input_state", ("State()", "State(leader=True)"))
 @pytest.mark.parametrize("intf_name", ("foo", "bar"))
 @pytest.mark.parametrize("version", (0, 42))
-def test_registered_test_cases_cache(tmp_path, role, event, input_state, intf_name, version):
+@pytest.mark.parametrize("validator", ("None", "lambda state_out: None"))
+def test_registered_test_cases_cache(
+    tmp_path, role, event, input_state, intf_name, version, validator
+):
     unique_name = "".join(random.choices(string.ascii_letters + string.digits, k=16))
 
     # if the module name is not unique, importing it multiple times will result in royal confusion
@@ -65,19 +69,17 @@ def test_registered_test_cases_cache(tmp_path, role, event, input_state, intf_na
     pth.write_text(
         dedent(
             f"""
-from interface_tester.interface_test import interface_test_case, Role
+from interface_tester.interface_test import register_test_case, Role
 from scenario import State
 
-@interface_test_case(
+register_test_case(
     "{role}",
     "{event}",
     input_state={input_state},
     name="{unique_name}",
-    schema='skip'
-)
-def foo(state_out: State):
-    pass
-    """
+    schema='skip',
+    validator={validator}
+)"""
         )
     )
 
@@ -112,7 +114,7 @@ def test_get_interface_name_and_version(tmp_path, intf_name, version):
     sys.path.pop(-1)
 
     foo_fn = getattr(module, "foo")
-    assert get_interface_name_and_version(foo_fn) == (intf_name, version)
+    assert get_interface_name_and_version(inspect.getfile(foo_fn)) == (intf_name, version)
 
 
 @pytest.mark.parametrize("intf_name", ("foo", "bar"))
@@ -141,4 +143,4 @@ def test_get_interface_name_and_version_raises(tmp_path, intf_name, version):
 
     foo_fn = getattr(module, "foo")
     with pytest.raises(InvalidTestCase):
-        get_interface_name_and_version(foo_fn)
+        get_interface_name_and_version(inspect.getfile(foo_fn))

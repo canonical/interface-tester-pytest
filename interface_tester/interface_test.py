@@ -87,7 +87,7 @@ def get_registered_test_cases() -> _TestCaseCacheType:
     return REGISTERED_TEST_CASES
 
 
-def get_interface_name_and_version(fn: Callable) -> Tuple[str, int]:
+def get_interface_name_and_version(file: str) -> Tuple[str, int]:
     f"""Return the interface name and version of a test case validator function.
 
     It assumes that the function is in a module whose path matches the following regex:
@@ -96,7 +96,6 @@ def get_interface_name_and_version(fn: Callable) -> Tuple[str, int]:
     If that can't be matched, it will raise a InvalidTestCase.
     """
 
-    file = inspect.getfile(fn)
     match = INTF_NAME_AND_VERSION_REGEX.findall(file)
     if len(match) != 1:
         raise InvalidTestCase(
@@ -145,12 +144,13 @@ def check_test_case_validator_signature(fn: Callable):
         )
 
 
-def interface_test_case(
+def register_test_case(
     role: Union[Role, "RoleLiteral"],
     event: Union[str, Event],
     input_state: Optional[State] = None,
     name: str = None,
     schema: Union[DataBagSchema, SchemaConfig, "_SchemaConfigLiteral"] = SchemaConfig.default,
+    validator: Callable[[State], None] = None,
 ):
     """Decorator to register a function as an interface test case.
     The decorated function must take exactly one positional argument of type State.
@@ -160,33 +160,38 @@ def interface_test_case(
     :param event: the event that this test is about.
     :param role: the interface role this test is about.
     :param input_state: the input state for this scenario test. Will default to the empty State().
+    :param validator: function that, if provided, will be called with the output state.
+        Any errors raised from there will mean that the test has failed.
     :param schema: the schema that the relation databags for the endpoint being tested should
         satisfy **after** the event has been processed.
     """
     if not isinstance(schema, DataBagSchema):
         schema = SchemaConfig(schema)
 
-    def wrapper(fn: Callable[[State], None]):
+    if validator:
         # validate that the function is a valid validator
-        check_test_case_validator_signature(fn)
+        check_test_case_validator_signature(validator)
 
         # derive from the module the function is defined in what the
         # interface name and version are
-        interface_name, version = get_interface_name_and_version(fn)
+        caller_file = inspect.getfile(validator)
+    else:
+        frame = inspect.stack()[1]
+        module = inspect.getmodule(frame[0])
+        caller_file = module.__file__
 
-        role_ = Role(role)
+    interface_name, version = get_interface_name_and_version(caller_file)
+    role_ = Role(role)
 
-        REGISTERED_TEST_CASES[(interface_name, version, role_)].append(
-            _InterfaceTestCase(
-                interface_name=interface_name,
-                version=version,
-                event=event,
-                role=role_,
-                validator=fn,
-                name=name or fn.__name__,
-                input_state=input_state,
-                schema=schema,
-            )
+    REGISTERED_TEST_CASES[(interface_name, version, role_)].append(
+        _InterfaceTestCase(
+            interface_name=interface_name,
+            version=version,
+            event=event,
+            role=role_,
+            validator=validator,
+            name=name or (validator.__name__ if validator else "<unnamed test>"),
+            input_state=input_state,
+            schema=schema,
         )
-
-    return wrapper
+    )

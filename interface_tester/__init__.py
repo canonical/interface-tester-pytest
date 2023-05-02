@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 import pytest
 
-from .interface_test import interface_test_case  # noqa: F401
+from .interface_test import register_test_case  # noqa: F401
 from .plugin import InterfaceTester
 from .schema_base import DataBagSchema  # noqa: F401
 
