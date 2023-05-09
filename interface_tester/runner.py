@@ -2,7 +2,7 @@ import typing
 from typing import Dict, List, Optional, Type
 
 from ops.charm import CharmBase
-from scenario import Event, Relation, State
+from scenario import Event, Relation, State, trigger
 
 from .errors import InvalidTestCaseError
 from .interface_test import SchemaConfig, logger
@@ -16,7 +16,8 @@ def _assert_case_plays(
     event: Event, state: State, charm_type: Type["CharmBase"], meta, actions, config
 ) -> State:
     try:
-        state_out = state.trigger(
+        state_out = trigger(
+            state,
             event,
             charm_type=charm_type,
             meta=meta,
