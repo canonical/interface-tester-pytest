@@ -47,7 +47,7 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/canonical/interface-tester-pytest"
+"Homepage" = "https://github.com/canonical/pytest-interface-tester"
 
 [project.scripts]
 interface_tester = "interface_tester.cli.main:main"
