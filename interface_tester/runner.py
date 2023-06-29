@@ -2,7 +2,7 @@ import typing
 from typing import Dict, List, Optional, Type
 
 from ops.charm import CharmBase
-from scenario import Event, Relation, State, Context
+from scenario import Context, Event, Relation, State
 
 from .errors import InvalidTestCaseError
 from .interface_test import SchemaConfig, logger
