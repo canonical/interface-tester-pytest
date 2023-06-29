@@ -18,7 +18,7 @@ def pprint_tests(
 
 def _pprint_tests(path: Path = Path(), include="*"):
     """Pretty-print a listing of the interface tests specified in this repository."""
-    print(f"collecting tests from root = {path.absolute()}...")
+    print(f"collecting tests for {include} from root = {path.absolute()}")
     tests = collect_tests(path=path, include=include)
     print("Discovered:")
 
