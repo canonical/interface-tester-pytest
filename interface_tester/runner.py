@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 
 
 def _assert_case_plays(
-        event: Event, state: State, charm_type: Type["CharmBase"], meta, actions, config
+    event: Event, state: State, charm_type: Type["CharmBase"], meta, actions, config
 ) -> State:
     try:
         ctx = Context(charm_type, meta=meta, actions=actions, config=config)
@@ -57,7 +57,7 @@ def _assert_schema_valid(schema: DataBagSchema, relation: Relation) -> None:
 
 
 def _assert_schemas_valid(
-        test: "_InterfaceTestCase", state_out: State, schema: DataBagSchema, interface_name: str
+    test: "_InterfaceTestCase", state_out: State, schema: DataBagSchema, interface_name: str
 ) -> List[str]:
     """Check that all relations using the interface comply with the provided schema."""
     test_schema = test.schema
@@ -87,17 +87,17 @@ def _assert_schemas_valid(
 
 
 def run_test_case(
-        test: "_InterfaceTestCase",
-        schema: Optional["DataBagSchema"],
-        event: Event,
-        state: State,
-        interface_name: str,
-        # the charm type we're testing
-        charm_type: Type["CharmBase"],
-        # charm metadata yamls
-        meta: Dict,
-        config: Dict,
-        actions: Dict,
+    test: "_InterfaceTestCase",
+    schema: Optional["DataBagSchema"],
+    event: Event,
+    state: State,
+    interface_name: str,
+    # the charm type we're testing
+    charm_type: Type["CharmBase"],
+    # charm metadata yamls
+    meta: Dict,
+    config: Dict,
+    actions: Dict,
 ) -> List[str]:
     """Run an interface test case.
 
