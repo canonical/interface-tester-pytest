@@ -69,7 +69,7 @@ from interface_tester.interface_test import interface_test_case, Role
 from scenario import State
 
 @interface_test_case(
-    "{role}",
+    "{role.value}",
     "{event}",
     input_state={input_state},
     name="{unique_name}",

@@ -2,7 +2,7 @@ import typing
 from typing import Dict, List, Optional, Type
 
 from ops.charm import CharmBase
-from scenario import Event, Relation, State, trigger
+from scenario import Context, Event, Relation, State
 
 from .errors import InvalidTestCaseError
 from .interface_test import SchemaConfig, logger
@@ -16,14 +16,8 @@ def _assert_case_plays(
     event: Event, state: State, charm_type: Type["CharmBase"], meta, actions, config
 ) -> State:
     try:
-        state_out = trigger(
-            state,
-            event,
-            charm_type=charm_type,
-            meta=meta,
-            actions=actions,
-            config=config,
-        )
+        ctx = Context(charm_type, meta=meta, actions=actions, config=config)
+        state_out = ctx.run(event, state)
     except Exception as e:
         msg = (
             f"Failed check 1: scenario errored out: ({type(e).__name__}){e}. Could not play scene."
