@@ -82,9 +82,12 @@ _TestCaseCacheType = Dict[Tuple["InterfaceNameStr", "VersionInt", Role], List[_I
 REGISTERED_TEST_CASES: _TestCaseCacheType = defaultdict(list)
 
 
-def get_registered_test_cases() -> _TestCaseCacheType:
+def get_registered_test_cases(clear: bool=False) -> _TestCaseCacheType:
     """The test cases that have been registered so far."""
-    return REGISTERED_TEST_CASES
+    tc = REGISTERED_TEST_CASES.copy()
+    if clear:
+        REGISTERED_TEST_CASES.clear()
+    return tc
 
 
 def get_interface_name_and_version(fn: Callable) -> Tuple[str, int]:

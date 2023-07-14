@@ -214,12 +214,15 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
             # strip .py
             module_name = str(possible_test_file.with_suffix("").name)
             try:
-                _ = importlib.import_module(module_name)
+                importlib.import_module(module_name)
             except ImportError as e:
                 logger.error(f"Failed to load module {possible_test_file}: {e}")
                 continue
 
-            cases = get_registered_test_cases()
+            cases = get_registered_test_cases(clear=True)
+            del sys.modules[module_name]
+
+            # print(cases)
             provider_test_cases.extend(cases[(interface_name, version, Role.provider)])
             requirer_test_cases.extend(cases[(interface_name, version, Role.requirer)])
 
@@ -228,6 +231,7 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
 
         # remove from import search path
         sys.path.pop(-1)
+
     return provider_test_cases, requirer_test_cases
 
 
