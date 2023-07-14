@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pytest-interface-tester"
 
-version = "0.3.1"
+version = "0.3.2"
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" },
 ]
@@ -22,7 +22,7 @@ keywords = ["juju", "relation interfaces"]
 dependencies = [
     "pydantic==1.10.7",
     "typer==0.7.0",
-    "ops-scenario==3.0.1",
+    "ops-scenario>=4.0",
     "pytest"
 ]
 
