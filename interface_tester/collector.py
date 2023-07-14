@@ -219,7 +219,7 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
                 logger.error(f"Failed to load module {possible_test_file}: {e}")
                 continue
 
-            cases = get_registered_test_cases(clear=True)
+            cases = get_registered_test_cases()
             del sys.modules[module_name]
 
             # print(cases)
