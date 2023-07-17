@@ -11,20 +11,19 @@ correctly.
 """
 import dataclasses
 import importlib
+import inspect
 import json
 import logging
 import sys
 import types
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, TypedDict
+from typing import Dict, List, Literal, Optional, Type, TypedDict, Callable
 
 import pydantic
 import yaml
 
-from .interface_test import DataBagSchema, Role, get_registered_test_cases
-
-if TYPE_CHECKING:
-    from .interface_test import _InterfaceTestCase
+from interface_tester.interface_test import Role
+from interface_tester.schema_base import DataBagSchema
 
 logger = logging.getLogger("interface_tests_checker")
 
@@ -71,7 +70,7 @@ class _CharmsDotYamlSpec(TypedDict):
 class _RoleTestSpec(TypedDict):
     """The tests, schema, and charms for a single role of a given relation interface version."""
 
-    tests: List["_InterfaceTestCase"]
+    tests: List[Callable[[None], None]]
     schema: Optional[Type[DataBagSchema]]
     charms: List[_CharmTestConfig]
 
@@ -198,6 +197,14 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
     return spec
 
 
+def _scrape_module_for_tests(module) -> List[Callable[[None], None]]:
+    tests = []
+    for name, obj in inspect.getmembers(module):
+        if inspect.isfunction(obj):
+            tests.append(obj)
+    return tests
+
+
 def _gather_test_cases_for_version(version_dir: Path, interface_name: str, version: int):
     """Collect interface test cases from a directory containing an interface version spec."""
 
@@ -210,21 +217,20 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
         # so we can import without tricks
         sys.path.append(str(interface_tests_dir))
 
-        for possible_test_file in interface_tests_dir.glob("*.py"):
-            # strip .py
-            module_name = str(possible_test_file.with_suffix("").name)
+        for role in Role:
+            module_name = "test_requirer" if role is Role.requirer else "test_provider"
             try:
-                importlib.import_module(module_name)
+                module = importlib.import_module(module_name)
             except ImportError as e:
-                logger.error(f"Failed to load module {possible_test_file}: {e}")
+                logger.error(f"Failed to load module {module_name}: {e}")
                 continue
 
-            cases = get_registered_test_cases()
+            tests = _scrape_module_for_tests(module)
+
             del sys.modules[module_name]
 
-            # print(cases)
-            provider_test_cases.extend(cases[(interface_name, version, Role.provider)])
-            requirer_test_cases.extend(cases[(interface_name, version, Role.requirer)])
+            tgt = provider_test_cases if role is Role.provider else requirer_test_cases
+            tgt.extend(tests)
 
         if not (requirer_test_cases or provider_test_cases):
             logger.error(f"no valid test case files found in {interface_tests_dir}")

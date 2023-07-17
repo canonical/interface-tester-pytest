@@ -1,12 +1,10 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 import logging
-import operator
 import tempfile
 from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -16,38 +14,34 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
 
 from ops.testing import CharmType
-from scenario.state import Event, Relation, State, _CharmSpec
+from scenario.state import Event, State, _CharmSpec
 
-from .collector import InterfaceTestSpec, gather_test_spec_for_version
-from .errors import (
+from interface_tester.schema_base import DataBagSchema
+from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
+from interface_tester.errors import (
     InterfaceTesterValidationError,
     InterfaceTestsFailed,
-    InvalidTestCaseError,
     NoTestsRun,
 )
-from .runner import run_test_case
-from .schema_base import DataBagSchema
-
-if TYPE_CHECKING:
-    from .interface_test import _InterfaceTestCase
+from interface_tester.interface_test import _InterfaceTestContext, tester_context, RoleLiteral
 
 Callback = Callable[[State, Event], None]
+ROLE_TO_ROLE_META = {"provider": "provides", "requirer": "requires"}
 
 logger = logging.getLogger("pytest_interface_tester")
-ROLE_TO_ROLE_META = {"provider": "provides", "requirer": "requires"}
-Role = Literal["provider", "requirer"]
 
 
 class InterfaceTester:
+    _RAISE_IMMEDIATELY = False
+
     def __init__(
-        self,
-        repo: str = "https://github.com/canonical/charm-relation-interfaces",
-        branch: str = "main",
-        base_path: str = "interfaces",
+            self,
+            repo: str = "https://github.com/canonical/charm-relation-interfaces",
+            branch: str = "main",
+            base_path: str = "interfaces",
     ):
         self._repo = repo
         self._branch = branch
@@ -65,18 +59,18 @@ class InterfaceTester:
         self._charm_spec_cache = None
 
     def configure(
-        self,
-        *,
-        charm_type: Optional[Type[CharmType]] = None,
-        repo: Optional[str] = None,
-        branch: Optional[str] = None,
-        base_path: Optional[str] = None,
-        interface_name: Optional[str] = None,
-        interface_version: Optional[int] = None,
-        state_template: Optional[State] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        actions: Optional[Dict[str, Any]] = None,
-        config: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            charm_type: Optional[Type[CharmType]] = None,
+            repo: Optional[str] = None,
+            branch: Optional[str] = None,
+            base_path: Optional[str] = None,
+            interface_name: Optional[str] = None,
+            interface_version: Optional[int] = None,
+            state_template: Optional[State] = None,
+            meta: Optional[Dict[str, Any]] = None,
+            actions: Optional[Dict[str, Any]] = None,
+            config: Optional[Dict[str, Any]] = None,
     ):
         """
 
@@ -125,7 +119,7 @@ class InterfaceTester:
             )
         if not self._charm_type:
             errors.append("Tester misconfigured: needs a charm_type set.")
-        if not self.meta:
+        elif not self.meta:
             errors.append("no metadata: it was not provided, and it cannot be autoloaded")
         if not self._repo:
             errors.append("repo missing")
@@ -202,11 +196,11 @@ class InterfaceTester:
 
             repo_name = self._repo.split("/")[-1]
             intf_spec_path = (
-                Path(tempdir)
-                / repo_name
-                / self._base_path
-                / self._interface_name.replace("-", "_")
-                / f"v{self._interface_version}"
+                    Path(tempdir)
+                    / repo_name
+                    / self._base_path
+                    / self._interface_name.replace("-", "_")
+                    / f"v{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
@@ -223,13 +217,13 @@ class InterfaceTester:
 
         return tests
 
-    def _gather_supported_endpoints(self) -> Dict[Literal[Role], List[str]]:
+    def _gather_supported_endpoints(self) -> Dict[RoleLiteral, List[str]]:
         """Given a relation interface name, return a list of supported endpoints as either role.
 
         These are collected from the charm's metadata.yaml.
         """
-        supported_endpoints: Dict[Literal[Role], List[str]] = {}
-        role: Role
+        supported_endpoints: Dict["RoleLiteral", List[str]] = {}
+        role: RoleLiteral
         for role in ("provider", "requirer"):
             meta_role = ROLE_TO_ROLE_META[role]
 
@@ -252,8 +246,8 @@ class InterfaceTester:
         return supported_endpoints
 
     def _yield_tests(
-        self,
-    ) -> Generator[Tuple["_InterfaceTestCase", "DataBagSchema", Event, State], None, None]:
+            self,
+    ) -> Generator[Tuple[Callable, RoleLiteral, DataBagSchema], None, None]:
         """Yield all test cases applicable to this charm and interface.
 
         This means:
@@ -280,41 +274,14 @@ class InterfaceTester:
         if not supported_endpoints:
             raise RuntimeError(f"this charm does not declare any endpoint using {interface_name}.")
 
-        role: Role
+        role: RoleLiteral
         for role in supported_endpoints:
             logger.debug(f"collecting scenes for {role}")
 
             spec = tests[role]
-            test: "_InterfaceTestCase"
+            schema = spec["schema"]
             for test in spec["tests"]:
-                logger.debug(f"converting {test} to ")
-
-                # this is the input state as specified by the interface tests writer. It can
-                # contain elements that are required for the relation interface test to work,
-                # typically relation data pertaining to the  relation interface being tested.
-                input_state = test.input_state
-
-                # state_template is state as specified by the charm being tested, which the charm
-                # requires to function properly. Consider it part of the mocking. For example:
-                # some required config, a "happy" status, network information, OTHER relations.
-                # Typically, should NOT touch the relation that this interface test is about
-                #  -> so we overwrite and warn on conflict: state_template is the baseline,
-                state = (self._state_template or State()).copy()
-
-                relations = self._generate_relations_state(
-                    state, input_state, supported_endpoints, role
-                )
-                # State is frozen; replace
-                modified_state = state.replace(relations=relations)
-
-                # the Relation instance this test is about:
-                relation = next(filter(lambda r: r.interface == self._interface_name, relations))
-                # test.EVENT might be a string or an Event. Cast to Event.
-                evt = self._coerce_event(test.event, relation)
-
-                logger.info(f"collected test for {interface_name} with {evt.name}")
-                logger.debug(f"state={modified_state}, evt={evt}")
-                yield test, spec["schema"], evt, modified_state
+                yield test, role, schema
 
     def __repr__(self):
         return f"""<Interface Tester: 
@@ -339,21 +306,25 @@ class InterfaceTester:
         errors = []
         ran_some = False
 
-        for test, schema, event, state in self._yield_tests():
-            out = run_test_case(
-                test=test,
+        for test_fn, role, schema in self._yield_tests():
+            ctx = _InterfaceTestContext(
+                role=role,
                 schema=schema,
-                event=event,
-                state=state,
                 interface_name=self._interface_name,
+                version=self._interface_version,
                 charm_type=self._charm_type,
                 meta=self.meta,
                 config=self.config,
                 actions=self.actions,
+                supported_endpoints=self._gather_supported_endpoints()
             )
-            if out:
-                errors.extend(out)
-
+            try:
+                with tester_context(ctx):
+                    test_fn()
+            except Exception as e:
+                if self._RAISE_IMMEDIATELY:
+                    raise e
+                errors.append(e)
             ran_some = True
 
         # todo: consider raising custom exceptions here.
@@ -364,108 +335,3 @@ class InterfaceTester:
             msg = f"no tests gathered for {self._interface_name}/v{self._interface_version}"
             logger.warning(msg)
             raise NoTestsRun(msg)
-
-    def _coerce_event(self, raw_event: Union[str, Event], relation: Relation) -> Event:
-        # if the event being tested is a relation event, we need to inject some metadata
-        # or scenario.Runtime won't be able to guess what envvars need setting before ops.main
-        # takes over
-        if isinstance(raw_event, str):
-            ep_name, _, evt_kind = raw_event.rpartition("-relation-")
-            if ep_name and evt_kind:
-                # this is a relation event.
-                # we inject the relation metadata
-                # todo: if the user passes a relation event that is NOT about the relation
-                #  interface that this test is about, at this point we are injecting the wrong
-                #  Relation instance.
-                #  e.g. if in interfaces/foo one wants to test that if 'bar-relation-joined' is
-                #  fired... then one would have to pass an Event instance already with its
-                #  own Relation.
-                return Event(
-                    raw_event,
-                    relation=relation.replace(endpoint=ep_name),
-                )
-
-            else:
-                return Event(raw_event)
-
-        elif isinstance(raw_event, Event):
-            if raw_event._is_relation_event and not raw_event.relation:
-                raise InvalidTestCaseError(
-                    "This test case was passed an Event representing a relation event."
-                    "However it does not have a Relation. Please pass it to the Event like so: "
-                    "evt = Event('my_relation_changed', relation=Relation(...))"
-                )
-
-            return raw_event
-
-        else:
-            raise InvalidTestCaseError(
-                f"Expected Event or str, not {type(raw_event)}. "
-                f"Invalid test case: {self} cannot cast {raw_event} to Event."
-            )
-
-    def _generate_relations_state(
-        self, state_template: State, input_state: State, supported_endpoints, role: Role
-    ) -> List[Relation]:
-        """Merge the relations from the input state and the state template into one.
-
-        The charm being tested possibly provided a state_template to define some setup mocking data
-        The interface tests also have an input_state. Here we merge them into one relation list to
-        be passed to the 'final' State the test will run with.
-        """
-        interface_name = self._interface_name
-
-        for rel in state_template.relations:
-            if rel.interface == interface_name:
-                logger.warning(
-                    f"relation with interface name = {interface_name} found in state template. "
-                    f"This will be overwritten by the relation spec provided by the relation "
-                    f"interface test case."
-                )
-
-        def filter_relations(rels: List[Relation], op: Callable):
-            return [r for r in rels if op(r.interface, interface_name)]
-
-        # the baseline is: all relations whose interface IS NOT the interface we're testing.
-        relations = filter_relations(state_template.relations, op=operator.ne)
-
-        if input_state:
-            # if the charm we're testing specified some relations in its input state, we add those
-            # whose interface IS the same as the one we're testing. If other relation interfaces
-            # were specified, they will be ignored.
-            relations.extend(filter_relations(input_state.relations, op=operator.eq))
-
-            if ignored := filter_relations(input_state.relations, op=operator.eq):
-                logger.warning(
-                    f"irrelevant relations specified in input state for {interface_name}/{role}."
-                    f"These will be ignored. details: {ignored}"
-                )
-
-        # if we still don't have any relation matching the interface we're testing, we generate
-        # one from scratch.
-        if not filter_relations(relations, op=operator.eq):
-            # if neither the charm nor the interface specified any custom relation spec for
-            # the interface we're testing, we will provide one.
-            endpoints_for_interface = supported_endpoints[role]
-
-            if len(endpoints_for_interface) < 1:
-                raise ValueError(f"no endpoint found for {role}/{interface_name}.")
-            elif len(endpoints_for_interface) > 1:
-                raise ValueError(
-                    f"Multiple endpoints found for {role}/{interface_name}: "
-                    f"{endpoints_for_interface}: cannot guess which one it is "
-                    f"we're supposed to be testing"
-                )
-            else:
-                endpoint = endpoints_for_interface[0]
-
-            relations.append(
-                Relation(
-                    interface=interface_name,
-                    endpoint=endpoint,
-                )
-            )
-        logger.debug(
-            f"{self}: merged {input_state} and {state_template} --> relations={relations}"
-        )
-        return relations
