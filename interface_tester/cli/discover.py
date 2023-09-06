@@ -1,9 +1,9 @@
 from pathlib import Path
+from typing import Callable
 
 import typer
 
 from interface_tester.collector import _CharmTestConfig, collect_tests
-from interface_tester.interface_test import SchemaConfig, _InterfaceTestCase
 
 
 def pprint_tests(
@@ -22,10 +22,8 @@ def _pprint_tests(path: Path = Path(), include="*"):
     tests = collect_tests(path=path, include=include)
     print("Discovered:")
 
-    def pprint_case(case: "_InterfaceTestCase"):
-        state = "yes" if case.input_state else "no"
-        schema_config = case.schema if isinstance(case.schema, SchemaConfig) else "custom"
-        print(f"      - {case.name}:: {case.event} (state={state}, schema={schema_config})")
+    def pprint_case(case: Callable):
+        print(f"      - {case.__name__}")
 
     for interface, versions in tests.items():
         if not versions:
