@@ -6,8 +6,6 @@ from ops import CharmBase
 from scenario.state import State
 
 from interface_tester import InterfaceTester
-
-from interface_tester import InterfaceTester
 from interface_tester.collector import gather_test_spec_for_version
 from tests.unit.utils import CRI_LIKE_PATH
 
@@ -20,6 +18,7 @@ class CRILikePathTester(InterfaceTester):
             version=self._interface_version,
         )
 
+
 class DummiCharm(CharmBase):
     pass
 
@@ -28,10 +27,11 @@ class DummiCharm(CharmBase):
 def interface_tester(interface_tester: CRILikePathTester):
     interface_tester.configure(
         charm_type=DummiCharm,
-        meta={"name": "dummi",
-              "provides": {"tracing": {"interface": "tracing"}},
-              "requires": {"tracing": {"interface": "tracing"}}
-              },
+        meta={
+            "name": "dummi",
+            "provides": {"tracing": {"interface": "tracing"}},
+            "requires": {"tracing": {"interface": "tracing"}},
+        },
         state_template=State(leader=True),
     )
     yield interface_tester

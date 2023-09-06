@@ -17,7 +17,7 @@ import logging
 import sys
 import types
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Type, TypedDict, Callable
+from typing import Callable, Dict, List, Literal, Optional, Type, TypedDict
 
 import pydantic
 import yaml

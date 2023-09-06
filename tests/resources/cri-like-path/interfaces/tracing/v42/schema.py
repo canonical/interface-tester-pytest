@@ -1,8 +1,9 @@
 from enum import Enum
 from typing import List
 
-from interface_tester.schema_base import DataBagSchema
 from pydantic import BaseModel, Json
+
+from interface_tester.schema_base import DataBagSchema
 
 
 class IngesterProtocol(str, Enum):
@@ -24,5 +25,5 @@ class TracingRequirerData(BaseModel):
 
 class RequirerSchema(DataBagSchema):
     """Requirer schema for Tracing."""
-    app: TracingRequirerData
 
+    app: TracingRequirerData

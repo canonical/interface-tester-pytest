@@ -8,9 +8,9 @@ import re
 import typing
 from contextlib import contextmanager
 from enum import Enum
-from typing import Callable, Literal, Optional, Union, Any, Dict, List
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
-from scenario import Event, State, Context, Relation
+from scenario import Context, Event, Relation, State
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
 
@@ -119,7 +119,7 @@ def tester_context(ctx: _InterfaceTestContext):
     tester = Tester.__instance__
 
     if not tester:
-        raise NoTesterInstanceError(f'Invalid test: {ctx.test_fn} did not instantiate Tester.')
+        raise NoTesterInstanceError(f"Invalid test: {ctx.test_fn} did not instantiate Tester.")
 
     try:
         tester._finalize()
@@ -133,6 +133,7 @@ def tester_context(ctx: _InterfaceTestContext):
 
 class InvalidTesterRunError(RuntimeError):
     """Raised if Tester is being used incorrectly."""
+
     def __init__(self, test_name, msg):
         _msg = f"failed running {test_name}: invalid test. {msg}"
         super().__init__(_msg)
@@ -149,7 +150,7 @@ class NoSchemaError(InvalidTesterRunError):
 class Tester:
     __instance__ = None
 
-    def __init__(self, state_in: State=None, name: str = None):
+    def __init__(self, state_in: State = None, name: str = None):
         """Initializer.
 
         :param state_in: the input state for this scenario test. Will default to the empty State().
@@ -161,7 +162,7 @@ class Tester:
         Tester.__instance__ = self
 
         if not self.ctx:
-            raise RuntimeError('Tester can only be initialized inside a tester context.')
+            raise RuntimeError("Tester can only be initialized inside a tester context.")
 
         self._state_template = None
         self._state_in = state_in or State()
@@ -180,7 +181,7 @@ class Tester:
         return _TESTER_CTX
 
     def run(self, event: Union[str, Event]):
-        assert self.ctx, 'tester cannot run: no _TESTER_CTX set'
+        assert self.ctx, "tester cannot run: no _TESTER_CTX set"
 
         state_out = self._run(event)
         self._state_out = state_out
@@ -190,10 +191,10 @@ class Tester:
     def _relations(self) -> List[Relation]:
         return [r for r in self._state_out.relations if r.interface == self.ctx.interface_name]
 
-    def assert_schema_valid(self, schema:"DataBagSchema" = None):
+    def assert_schema_valid(self, schema: "DataBagSchema" = None):
         self._has_checked_schema = True
         if not self._has_run:
-            raise InvalidTesterRunError(self._test_id, 'call Tester.run() first')
+            raise InvalidTesterRunError(self._test_id, "call Tester.run() first")
 
         if schema:
             logger.info("running test with custom schema")
@@ -204,7 +205,7 @@ class Tester:
             if not databag_schema:
                 raise NoSchemaError(
                     self._test_id,
-                    "No schema found. If this is expected, call Tester.skip_schema_validation() instead."
+                    "No schema found. If this is expected, call Tester.skip_schema_validation() instead.",
                 )
 
         errors = []
@@ -223,15 +224,19 @@ class Tester:
 
     def _check_has_run(self):
         if not self._has_run:
-            raise InvalidTesterRunError(self._test_id, 'Call Tester.run() first.')
+            raise InvalidTesterRunError(self._test_id, "Call Tester.run() first.")
 
     def assert_relation_data_empty(self):
         self._check_has_run()
         for relation in self._relations:
             if relation.local_app_data:
-                raise SchemaValidationError(f"test {self._test_id}: local app databag not empty for {relation}")
+                raise SchemaValidationError(
+                    f"test {self._test_id}: local app databag not empty for {relation}"
+                )
             if relation.local_unit_data:
-                raise SchemaValidationError(f"test {self._test_id}: local unit databag not empty for {relation}")
+                raise SchemaValidationError(
+                    f"test {self._test_id}: local unit databag not empty for {relation}"
+                )
         self._has_checked_schema = True
 
     def skip_schema_validation(self):
@@ -241,14 +246,17 @@ class Tester:
 
     def _finalize(self):
         if not self._has_run:
-            raise InvalidTesterRunError(self._test_id,
-                "Test function must call Tester.run() before returning.")
+            raise InvalidTesterRunError(
+                self._test_id, "Test function must call Tester.run() before returning."
+            )
         if not self._has_checked_schema:
-            raise InvalidTesterRunError(self._test_id,
+            raise InvalidTesterRunError(
+                self._test_id,
                 "Test function must call "
                 "Tester.skip_schema_validation(), or "
                 "Tester.assert_schema_valid(), or "
-                "Tester.assert_schema_empty() before returning.")
+                "Tester.assert_schema_empty() before returning.",
+            )
         self._detach()
 
     def _detach(self):
@@ -272,9 +280,7 @@ class Tester:
         state = (self._state_template or State()).copy()
 
         relations = self._generate_relations_state(
-            state, input_state,
-            self.ctx.supported_endpoints,
-            self.ctx.role
+            state, input_state, self.ctx.supported_endpoints, self.ctx.role
         )
         # State is frozen; replace
         modified_state = state.replace(relations=relations)
@@ -290,8 +296,12 @@ class Tester:
     def _run_scenario(self, event: Event, state: State):
         logger.debug(f"running scenario with state={state}, event={event}")
 
-        ctx = Context(self.ctx.charm_type, meta=self.ctx.meta,
-                      actions=self.ctx.actions, config=self.ctx.config)
+        ctx = Context(
+            self.ctx.charm_type,
+            meta=self.ctx.meta,
+            actions=self.ctx.actions,
+            config=self.ctx.config,
+        )
         return ctx.run(event, state)
 
     def _coerce_event(self, raw_event: Union[str, Event], relation: Relation) -> Event:
@@ -334,7 +344,7 @@ class Tester:
             )
 
     def _generate_relations_state(
-            self, state_template: State, input_state: State, supported_endpoints, role: Role
+        self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 
