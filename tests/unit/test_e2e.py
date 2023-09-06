@@ -9,7 +9,7 @@ from scenario import State
 from interface_tester import InterfaceTester
 from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
 from interface_tester.errors import InterfaceTestsFailed
-from interface_tester.interface_test import InvalidTesterRunError, NoSchemaError
+from interface_tester.interface_test import InvalidTesterRunError, NoSchemaError, Tester, NoTesterInstanceError
 from tests.unit.utils import CRI_LIKE_PATH
 
 
@@ -99,12 +99,11 @@ def test_data_on_changed():
             local_app_data={}
         )]
     ))
-    # state_out = t.run("tracing-relation-changed")
     t.skip_schema_validation()
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(InvalidTesterRunError):
         tester.run()
 
 
@@ -123,13 +122,13 @@ def test_data_on_changed():
             local_app_data={}
         )]
     ))
-    # state_out = t.run("tracing-relation-changed")
     t.assert_relation_data_empty()
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(InvalidTesterRunError):
         tester.run()
+    assert not Tester.__instance__
 
 
 def test_error_if_assert_schema_valid_before_run():
@@ -147,12 +146,11 @@ def test_data_on_changed():
             local_app_data={}
         )]
     ))
-    # state_out = t.run("tracing-relation-changed")
     t.assert_schema_valid()
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(InvalidTesterRunError):
         tester.run()
 
 
@@ -176,7 +174,7 @@ def test_data_on_changed():
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(NoSchemaError):
         tester.run()
 
 
@@ -199,7 +197,7 @@ def test_data_on_changed():
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(InvalidTesterRunError):
         tester.run()
 
 
@@ -222,7 +220,7 @@ def test_data_on_changed():
 """
 ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(InvalidTesterRunError):
         tester.run()
 
 
@@ -238,7 +236,7 @@ def test_data_on_changed():
 """
                                           ))
 
-    with pytest.raises(InterfaceTestsFailed):
+    with pytest.raises(NoTesterInstanceError):
         tester.run()
 
 

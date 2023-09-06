@@ -28,3 +28,4 @@ def test_data_on_changed():
         )]
     ))
     state_out = t.run("tracing-relation-changed")
+    t.assert_relation_data_empty()

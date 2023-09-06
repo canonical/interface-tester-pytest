@@ -316,7 +316,8 @@ class InterfaceTester:
                 meta=self.meta,
                 config=self.config,
                 actions=self.actions,
-                supported_endpoints=self._gather_supported_endpoints()
+                supported_endpoints=self._gather_supported_endpoints(),
+                test_fn=test_fn
             )
             try:
                 with tester_context(ctx):

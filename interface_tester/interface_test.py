@@ -46,12 +46,18 @@ class _InterfaceTestContext:
     """The version of the interface that this test is about."""
     role: Role
 
-    # fixme
     charm_type: type
+    """Charm class being tested"""
     supported_endpoints: dict
+    """Supported relation endpoints."""
     meta: Any
+    """Charm metadata.yaml"""
     config: Any
+    """Charm config.yaml"""
     actions: Any
+    """Charm actions.yaml"""
+    test_fn: Callable
+    """Test function."""
 
     """The role (provider|requirer) that this test is about."""
     schema: Optional["DataBagSchema"] = None
@@ -98,17 +104,41 @@ _TESTER_CTX: Optional[_InterfaceTestContext] = None
 def tester_context(ctx: _InterfaceTestContext):
     global _TESTER_CTX
     _TESTER_CTX = ctx
-    yield
-    _TESTER_CTX = None
-    if not Tester.__instance__:
-        raise NoTesterInstanceError('invalid tester_context usage: no Tester instance created')
-    Tester.__instance__._finalize()
+
+    try:
+        yield
+    except Exception as e:
+        tester = Tester.__instance__
+
+        if tester:
+            tester._detach()
+
+        _TESTER_CTX = None
+        raise
+
+    tester = Tester.__instance__
+
+    if not tester:
+        raise NoTesterInstanceError(f'Invalid test: {ctx.test_fn} did not instantiate Tester.')
+
+    try:
+        tester._finalize()
+    finally:
+        tester._detach()
+        _TESTER_CTX = None
+
+    if Tester.__instance__:
+        raise RuntimeError("cleanup failed, tester instance still bound")
 
 
 class InvalidTesterRunError(RuntimeError):
     """Raised if Tester is being used incorrectly."""
+    def __init__(self, test_name, msg):
+        _msg = f"failed running {test_name}: invalid test. {msg}"
+        super().__init__(_msg)
 
-class NoTesterInstanceError(InvalidTesterRunError):
+
+class NoTesterInstanceError(RuntimeError):
     """Raised if no Tester is created within a tester_context scope."""
 
 
@@ -135,11 +165,15 @@ class Tester:
 
         self._state_template = None
         self._state_in = state_in or State()
-        self._name = name
+        self._test_name = name or self.ctx.test_fn.__name__
 
         self._state_out = None  # will be State when has_run is true
         self._has_run = False
         self._has_checked_schema = False
+
+    @property
+    def _test_id(self):
+        return f"{self.ctx.interface_name}[{self.ctx.version}]/{self.ctx.role}:{self._test_name}"
 
     @property
     def ctx(self):
@@ -152,10 +186,14 @@ class Tester:
         self._state_out = state_out
         return state_out
 
+    @property
+    def _relations(self) -> List[Relation]:
+        return [r for r in self._state_out.relations if r.interface == self.ctx.interface_name]
+
     def assert_schema_valid(self, schema:"DataBagSchema" = None):
         self._has_checked_schema = True
         if not self._has_run:
-            raise RuntimeError('call Tester.run() first')
+            raise InvalidTesterRunError(self._test_id, 'call Tester.run() first')
 
         if schema:
             logger.info("running test with custom schema")
@@ -165,11 +203,12 @@ class Tester:
             databag_schema = self.ctx.schema
             if not databag_schema:
                 raise NoSchemaError(
-                    f"No schemas found for {self.ctx.interface_name}/{self.ctx.version}/{self.ctx.role};"
-                    f"call skip_schema_validation() manually.")
+                    self._test_id,
+                    "No schema found. If this is expected, call Tester.skip_schema_validation() instead."
+                )
 
         errors = []
-        for relation in [r for r in self._state_out.relations if r.interface == self.ctx.interface_name]:
+        for relation in self._relations:
             try:
                 databag_schema.validate(
                     {
@@ -184,28 +223,37 @@ class Tester:
 
     def _check_has_run(self):
         if not self._has_run:
-            raise InvalidTesterRunError('call Tester.run() first')
+            raise InvalidTesterRunError(self._test_id, 'Call Tester.run() first.')
 
     def assert_relation_data_empty(self):
         self._check_has_run()
-        # todo
+        for relation in self._relations:
+            if relation.local_app_data:
+                raise SchemaValidationError(f"test {self._test_id}: local app databag not empty for {relation}")
+            if relation.local_unit_data:
+                raise SchemaValidationError(f"test {self._test_id}: local unit databag not empty for {relation}")
         self._has_checked_schema = True
 
     def skip_schema_validation(self):
         self._check_has_run()
-        # todo
+        logger.debug("skipping schema validation")
         self._has_checked_schema = True
 
     def _finalize(self):
         if not self._has_run:
-            raise InvalidTesterRunError("call .run() before returning")
+            raise InvalidTesterRunError(self._test_id,
+                "Test function must call Tester.run() before returning.")
         if not self._has_checked_schema:
-            # todo:
-            raise InvalidTesterRunError("call .skip_schema_validation(), or ... before returning")
+            raise InvalidTesterRunError(self._test_id,
+                "Test function must call "
+                "Tester.skip_schema_validation(), or "
+                "Tester.assert_schema_valid(), or "
+                "Tester.assert_schema_empty() before returning.")
+        self._detach()
 
+    def _detach(self):
         # release singleton
         Tester.__instance__ = None
-
 
     def _run(self, event: Union[str, Event]):
         logger.debug(f"running {event}")
