@@ -8,7 +8,7 @@ import re
 import typing
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, List, Literal, Optional, Union
 
 from pydantic import ValidationError
 from scenario import Context, Event, Relation, State
@@ -108,7 +108,7 @@ def tester_context(ctx: _InterfaceTestContext):
 
     try:
         yield
-    except Exception as e:
+    except Exception:
         tester = Tester.__instance__
 
         if tester:
@@ -206,7 +206,8 @@ class Tester:
             if not databag_schema:
                 raise NoSchemaError(
                     self._test_id,
-                    "No schema found. If this is expected, call Tester.skip_schema_validation() instead.",
+                    "No schema found. If this is expected, "
+                    "call Tester.skip_schema_validation() instead.",
                 )
 
         errors = []

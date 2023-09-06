@@ -4,7 +4,7 @@ import logging
 import tempfile
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Type
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type
 
 from ops.testing import CharmType
 from scenario.state import Event, MetadataNotFoundError, State, _CharmSpec

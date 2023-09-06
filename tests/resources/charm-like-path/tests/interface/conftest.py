@@ -12,7 +12,7 @@ from tests.unit.utils import CRI_LIKE_PATH
 
 class CRILikePathTester(InterfaceTester):
     def _collect_interface_test_specs(self):
-        tests = gather_test_spec_for_version(
+        gather_test_spec_for_version(
             CRI_LIKE_PATH,
             interface_name=self._interface_name,
             version=self._interface_version,

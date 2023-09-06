@@ -8,13 +8,13 @@ from interface_tester.interface_test import Tester
 
 def test_no_data_on_created():
     t = Tester(State())
-    state_out = t.run(event="tracing-relation-created")
+    t.run(event="tracing-relation-created")
     t.assert_relation_data_empty()
 
 
 def test_no_data_on_joined():
     t = Tester()
-    state_out = t.run(event="tracing-relation-joined")
+    t.run(event="tracing-relation-joined")
     t.assert_relation_data_empty()
 
 
@@ -31,5 +31,5 @@ def test_data_on_changed():
             ]
         )
     )
-    state_out = t.run("tracing-relation-changed")
+    t.run("tracing-relation-changed")
     t.assert_relation_data_empty()
