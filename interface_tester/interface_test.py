@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
+from pydantic import ValidationError
 from scenario import Context, Event, Relation, State
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
@@ -217,7 +218,7 @@ class Tester:
                         "app": relation.local_app_data,
                     }
                 )
-            except RuntimeError as e:
+            except ValidationError as e:
                 errors.append(e.args[0])
         if errors:
             raise SchemaValidationError(errors)

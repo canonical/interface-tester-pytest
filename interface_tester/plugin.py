@@ -7,7 +7,7 @@ from subprocess import PIPE, Popen
 from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Type
 
 from ops.testing import CharmType
-from scenario.state import Event, State, _CharmSpec
+from scenario.state import Event, MetadataNotFoundError, State, _CharmSpec
 
 from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
 from interface_tester.errors import (
@@ -141,8 +141,7 @@ class InterfaceTester:
                 spec = _CharmSpec.autoload(self._charm_type)
                 # if no metadata.yaml can be found in the charm type module's parent directory,
                 # this call will raise:
-
-            except FileNotFoundError as e:
+            except MetadataNotFoundError as e:
                 # if we have _meta set, we're good, otherwise we're misconfigured.
                 if self._meta and self._charm_type:
                     spec = _CharmSpec(

@@ -1,11 +1,11 @@
 import pytest
+from utils import CRI_LIKE_PATH
 
 from interface_tester.collector import collect_tests
 from interface_tester.interface_test import (
     InvalidTestCase,
     check_test_case_validator_signature,
 )
-from tests.unit.utils import CRI_LIKE_PATH
 
 
 def test_signature_checker_too_many_params():
@@ -37,12 +37,12 @@ def test_signature_checker_too_many_opt_params():
 
 def test_load_from_mock_cri():
     tests = collect_tests(CRI_LIKE_PATH)
-    provider = tests["interface_name"]["v42"]["provider"]
+    provider = tests["tracing"]["v42"]["provider"]
     assert len(provider["tests"]) == 3
     assert not provider["schema"]
     assert provider["charms"][0].name == "tempo-k8s"
 
-    requirer = tests["interface_name"]["v42"]["requirer"]
+    requirer = tests["tracing"]["v42"]["requirer"]
     assert len(requirer["tests"]) == 3
     assert requirer["schema"]
     assert not requirer["charms"]

@@ -5,17 +5,17 @@ from textwrap import dedent
 import pytest
 from ops import CharmBase
 from scenario import State
+from utils import CRI_LIKE_PATH
 
 from interface_tester import InterfaceTester
-from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
-from interface_tester.errors import InterfaceTestsFailed
+from interface_tester.collector import gather_test_spec_for_version
+from interface_tester.errors import SchemaValidationError
 from interface_tester.interface_test import (
     InvalidTesterRunError,
     NoSchemaError,
     NoTesterInstanceError,
     Tester,
 )
-from tests.unit.utils import CRI_LIKE_PATH
 
 
 class LocalTester(InterfaceTester):
@@ -56,7 +56,7 @@ def test_local_run(interface_tester):
     interface_tester.run()
 
 
-def _setup_with_test_file(contents: str):
+def _setup_with_test_file(test_file: str, schema_file: str = None):
     td = tempfile.TemporaryDirectory()
     temppath = Path(td.name)
 
@@ -69,7 +69,11 @@ def _setup_with_test_file(contents: str):
             test_dir = pth / "interface_tests"
             test_dir.mkdir(parents=True)
             test_provider = test_dir / "test_provider.py"
-            test_provider.write_text(contents)
+            test_provider.write_text(test_file)
+
+            if schema_file:
+                schema_path = pth / "schema.py"
+                schema_path.write_text(schema_file)
 
             return gather_test_spec_for_version(
                 pth,
@@ -294,3 +298,164 @@ def test_valid_run():
     )
 
     tester.run()
+
+
+def test_valid_run_default_schema():
+    tester = _setup_with_test_file(
+        dedent(
+            """
+ from scenario import State, Relation
+
+ from interface_tester.interface_test import Tester
+ from interface_tester.schema_base import DataBagSchema
+
+ def test_data_on_changed():
+     t = Tester(State(
+         relations=[Relation(
+             endpoint='tracing',
+             interface='tracing',
+             remote_app_name='remote',
+             local_app_data={"foo":"1"},
+             local_unit_data={"bar": "smackbeef"}
+         )]
+     ))
+     state_out = t.run("tracing-relation-changed")
+     t.assert_schema_valid()
+ """
+        ),
+        schema_file=dedent(
+            """
+from interface_tester.interface_test import Tester
+from interface_tester.schema_base import DataBagSchema, BaseModel
+ 
+class Foo(BaseModel):
+    foo:int=1 
+class Bar(BaseModel):
+    bar:str
+    
+class ProviderSchema(DataBagSchema):
+    unit: Bar
+    app: Foo
+"""
+        ),
+    )
+
+    tester.run()
+
+
+def test_default_schema_validation_failure():
+    tester = _setup_with_test_file(
+        dedent(
+            """
+ from scenario import State, Relation
+
+ from interface_tester.interface_test import Tester
+ from interface_tester.schema_base import DataBagSchema
+
+ def test_data_on_changed():
+     t = Tester(State(
+         relations=[Relation(
+             endpoint='tracing',
+             interface='tracing',
+             remote_app_name='remote',
+             local_app_data={"foo":"abc"},
+             local_unit_data={"bar": "smackbeef"}
+         )]
+     ))
+     state_out = t.run("tracing-relation-changed")
+     t.assert_schema_valid()
+ """
+        ),
+        schema_file=dedent(
+            """
+    from interface_tester.interface_test import Tester
+    from interface_tester.schema_base import DataBagSchema, BaseModel
+
+    class Foo(BaseModel):
+        foo:int=1 
+    class Bar(BaseModel):
+        bar:str
+
+    class ProviderSchema(DataBagSchema):
+        unit: Bar
+        app: Foo
+    """
+        ),
+    )
+
+    with pytest.raises(SchemaValidationError):
+        tester.run()
+
+
+def test_valid_run_custom_schema():
+    tester = _setup_with_test_file(
+        dedent(
+            """
+ from scenario import State, Relation
+
+ from interface_tester.interface_test import Tester
+ from interface_tester.schema_base import DataBagSchema, BaseModel
+ 
+ class Foo(BaseModel):
+    foo:int=1 
+ class Bar(BaseModel):
+    bar:str
+    
+ class FooBarSchema(DataBagSchema):
+     unit: Bar
+     app: Foo
+     
+ def test_data_on_changed():
+     t = Tester(State(
+         relations=[Relation(
+             endpoint='tracing',
+             interface='tracing',
+             remote_app_name='remote',
+             local_app_data={"foo":"1"},
+             local_unit_data={"bar": "smackbeef"}
+         )]
+     ))
+     state_out = t.run("tracing-relation-changed")
+     t.assert_schema_valid(schema=FooBarSchema)
+ """
+        )
+    )
+
+    tester.run()
+
+
+def test_invalid_custom_schema():
+    tester = _setup_with_test_file(
+        dedent(
+            """
+ from scenario import State, Relation
+
+ from interface_tester.interface_test import Tester
+ from interface_tester.schema_base import DataBagSchema, BaseModel
+
+ class Foo(BaseModel):
+    foo:int=1 
+ class Bar(BaseModel):
+    bar:str
+
+ class FooBarSchema(DataBagSchema):
+     unit: Bar
+     app: Foo
+
+ def test_data_on_changed():
+     t = Tester(State(
+         relations=[Relation(
+             endpoint='tracing',
+             interface='tracing',
+             remote_app_name='remote',
+             local_app_data={"foo":"abc"},
+             local_unit_data={"bar": "smackbeef"}
+         )]
+     ))
+     state_out = t.run("tracing-relation-changed")
+     t.assert_schema_valid(schema=FooBarSchema)
+ """
+        )
+    )
+    with pytest.raises(SchemaValidationError):
+        tester.run()
