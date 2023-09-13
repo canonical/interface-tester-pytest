@@ -1,12 +1,14 @@
 from interface_tester.cli.discover import pprint_tests
-from tests.unit.utils import CRI_LIKE_PATH
+from utils import CRI_LIKE_PATH
 
 
 def test_discover(capsys):
     pprint_tests(CRI_LIKE_PATH, "*")
     out = capsys.readouterr().out
-    assert out.strip() == """
-collecting tests for * from root = /home/pietro/canonical/pytest-interface-tester/tests/resources/cri-like-path
+    assert (
+        out.strip()
+        == f"""
+collecting tests for * from root = {CRI_LIKE_PATH}
 Discovered:
 database:
   - v1:
@@ -40,3 +42,4 @@ tracing:
      - schema OK
      - <no charms>
 """.strip()
+    )

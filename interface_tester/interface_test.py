@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Callable, List, Literal, Optional, Union
 
+from ops.testing import CharmType
 from pydantic import ValidationError
 from scenario import Context, Event, Relation, State
 
@@ -47,7 +48,7 @@ class _InterfaceTestContext:
     """The version of the interface that this test is about."""
     role: Role
 
-    charm_type: type
+    charm_type: CharmType
     """Charm class being tested"""
     supported_endpoints: dict
     """Supported relation endpoints."""
@@ -135,7 +136,7 @@ def tester_context(ctx: _InterfaceTestContext):
 class InvalidTesterRunError(RuntimeError):
     """Raised if Tester is being used incorrectly."""
 
-    def __init__(self, test_name, msg):
+    def __init__(self, test_name: str, msg: str):
         _msg = f"failed running {test_name}: invalid test. {msg}"
         super().__init__(_msg)
 
@@ -151,11 +152,51 @@ class NoSchemaError(InvalidTesterRunError):
 class Tester:
     __instance__ = None
 
-    def __init__(self, state_in: State = None, name: str = None):
-        """Initializer.
+    def __init__(self, state_in: Optional[State] = None, name: Optional[str] = None):
+        """Core interface test specification tool.
 
-        :param state_in: the input state for this scenario test. Will default to the empty State().
-        :param name: the name of the test. Will default to the function's identifier.
+        This class is essential to defining an interface test to be used in the
+        ``charm-relation-interfaces`` repository. In order to define a valid interface
+        test you will need to:
+
+        a) Initialize this class in the scope of an interface test to specify the scenario's
+        initial state. Then b) call its ``run`` method to execute scenario, and finally
+        c) validate the schema.
+
+        Failing to take any of these three steps will result in an invalid test.
+        If an error is raised during execution of these steps, or manually from elsewhere in the
+        test scope, the test will fail.
+
+        usage:
+        >>> def test_foo_relation_joined():
+        >>>     t = Tester(state_in=State()) # specify the initial state
+        >>>     state_out = t.run('foo-relation-joined') # run Scenario and get the output state
+        >>>     t.assert_schema_valid()  # check that the schema is valid
+
+        You can run assertions on ``state_out``, if the interface specification makes
+        claims on its contents.
+
+        Alternatively to calling ``assert_schema_valid``, you can:
+        1) define your own schema subclassing ``DataBagSchema``
+        >>>     from interface_tester.schema_base import DataBagSchema, BaseModel
+        >>>     class CustomAppModel(BaseModel):
+        >>>         foo: int
+        >>>         bar: str
+        >>>
+        >>>     class SomeCustomSchema(DataBagSchema):
+        >>>         app: CustomAppModel
+        And then pass it to assert_schema_valid to override the default schema
+        (the one defined in ``schema.py``).
+        >>>     t.assert_schema_valid(SomeCustomSchema)
+        2) check that all local databags are empty (same as ``assert_schema_valid(DataBagSchema)``)
+        >>>     t.assert_relation_data_empty()
+        3) skip schema validation altogether if you know better
+        >>>     t.skip_schema_validation()
+
+        :param state_in: the input state for this scenario test.
+            Will default to the empty ``State()``.
+        :param name: the name of the test. Will default to the function's
+            identifier (``__name__``).
         """
         # todo: pythonify
         if Tester.__instance__:
@@ -163,7 +204,7 @@ class Tester:
         Tester.__instance__ = self
 
         if not self.ctx:
-            raise RuntimeError("Tester can only be initialized inside a tester context.")
+            raise RuntimeError("Tester can only be initialized inside an interface test context.")
 
         self._state_template = None
         self._state_in = state_in or State()
@@ -174,15 +215,33 @@ class Tester:
         self._has_checked_schema = False
 
     @property
-    def _test_id(self):
+    def _test_id(self) -> str:
+        """A name for this test, as descriptive and unique as possible."""
         return f"{self.ctx.interface_name}[{self.ctx.version}]/{self.ctx.role}:{self._test_name}"
 
     @property
-    def ctx(self):
+    def ctx(self) -> Optional[_InterfaceTestContext]:
+        """The test context, defined by the test caller.
+
+        It exposes information about the charm that is using this test.
+        You probably won't need to call this from inside the test definition.
+
+        When called from an interface test scope, is guaranteed(^tm) to return
+        ``_InterfaceTestContext``.
+        """
         return _TESTER_CTX
 
-    def run(self, event: Union[str, Event]):
-        assert self.ctx, "tester cannot run: no _TESTER_CTX set"
+    def run(self, event: Union[str, Event]) -> "State":
+        """Simulate the emission on an event in the initial state you passed to the initializer.
+
+        Calling this method will run scenario and verify that the charm being tested can handle
+        the ``event`` without raising exceptions.
+
+        It returns the output state resulting from this execution, should you want to
+        write assertions against it.
+        """
+        if not self.ctx:
+            raise InvalidTesterRunError("tester cannot run: no _TESTER_CTX set")
 
         state_out = self._run(event)
         self._state_out = state_out
@@ -190,9 +249,16 @@ class Tester:
 
     @property
     def _relations(self) -> List[Relation]:
+        """The relations that this test is about."""
         return [r for r in self._state_out.relations if r.interface == self.ctx.interface_name]
 
-    def assert_schema_valid(self, schema: "DataBagSchema" = None):
+    def assert_schema_valid(self, schema: Optional["DataBagSchema"] = None):
+        """Check that the local databags of the relations being tested satisfy the default schema.
+
+        Default schema is defined in this-interface/vX/schema.py.
+        Override the schema being checked against by passing your own DataBagSchema subclass.
+        """
+
         self._has_checked_schema = True
         if not self._has_run:
             raise InvalidTesterRunError(self._test_id, "call Tester.run() first")
@@ -229,6 +295,7 @@ class Tester:
             raise InvalidTesterRunError(self._test_id, "Call Tester.run() first.")
 
     def assert_relation_data_empty(self):
+        """Assert that all local databags are empty for the relations being tested."""
         self._check_has_run()
         for relation in self._relations:
             if relation.local_app_data:
@@ -242,11 +309,16 @@ class Tester:
         self._has_checked_schema = True
 
     def skip_schema_validation(self):
+        """Skip schema validation for this test run.
+
+        Only use if you really have to.
+        """
         self._check_has_run()
         logger.debug("skipping schema validation")
         self._has_checked_schema = True
 
     def _finalize(self):
+        """Verify that .run() has been called, as well as some schema validation method."""
         if not self._has_run:
             raise InvalidTesterRunError(
                 self._test_id, "Test function must call Tester.run() before returning."
@@ -257,7 +329,7 @@ class Tester:
                 "Test function must call "
                 "Tester.skip_schema_validation(), or "
                 "Tester.assert_schema_valid(), or "
-                "Tester.assert_schema_empty() before returning.",
+                "Tester.assert_relation_data_empty() before returning.",
             )
         self._detach()
 
@@ -266,7 +338,7 @@ class Tester:
         Tester.__instance__ = None
 
     def _run(self, event: Union[str, Event]):
-        logger.debug(f"running {event}")
+        logger.debug("running %s" % event)
         self._has_run = True
 
         # this is the input state as specified by the interface tests writer. It can
@@ -292,11 +364,11 @@ class Tester:
         # test.EVENT might be a string or an Event. Cast to Event.
         evt: Event = self._coerce_event(event, relation)
 
-        logger.info(f"collected test for {self.ctx.interface_name} with {evt.name}")
+        logger.info("collected test for %s with %s" % (self.ctx.interface_name, evt.name))
         return self._run_scenario(evt, modified_state)
 
     def _run_scenario(self, event: Event, state: State):
-        logger.debug(f"running scenario with state={state}, event={event}")
+        logger.debug("running scenario with state=%s, event=%s" % (state, event))
 
         ctx = Context(
             self.ctx.charm_type,
@@ -359,9 +431,9 @@ class Tester:
         for rel in state_template.relations:
             if rel.interface == interface_name:
                 logger.warning(
-                    f"relation with interface name = {interface_name} found in state template. "
-                    f"This will be overwritten by the relation spec provided by the relation "
-                    f"interface test case."
+                    "relation with interface name =%s found in state template. "
+                    "This will be overwritten by the relation spec provided by the relation "
+                    "interface test case." % interface_name
                 )
 
         def filter_relations(rels: List[Relation], op: Callable):
@@ -378,8 +450,8 @@ class Tester:
 
             if ignored := filter_relations(input_state.relations, op=operator.eq):
                 logger.warning(
-                    f"irrelevant relations specified in input state for {interface_name}/{role}."
-                    f"These will be ignored. details: {ignored}"
+                    "irrelevant relations specified in input state for %s/%s."
+                    "These will be ignored. details: %s" % (interface_name, role, ignored)
                 )
 
         # if we still don't have any relation matching the interface we're testing, we generate
@@ -407,6 +479,7 @@ class Tester:
                 )
             )
         logger.debug(
-            f"{self}: merged {input_state} and {state_template} --> relations={relations}"
+            "%s: merged %s and %s --> relations=%s"
+            % (self, input_state, state_template, relations)
         )
         return relations
