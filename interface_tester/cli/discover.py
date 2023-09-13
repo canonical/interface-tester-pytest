@@ -25,7 +25,8 @@ def _pprint_tests(path: Path = Path(), include="*"):
     def pprint_case(case: Callable):
         print(f"      - {case.__name__}")
 
-    for interface, versions in tests.items():
+    # sorted by interface first, version then
+    for interface, versions in sorted(tests.items()):
         if not versions:
             print(f"{interface}: <no tests>")
             print()
@@ -33,19 +34,20 @@ def _pprint_tests(path: Path = Path(), include="*"):
 
         print(f"{interface}:")
 
-        for version, roles in versions.items():
+        for version, roles in sorted(versions.items()):
             print(f"  - {version}:")
 
             by_role = {role: roles[role] for role in {"requirer", "provider"}}
 
-            for role, test_spec in by_role.items():
+            for role, test_spec in sorted(by_role.items()):
                 print(f"   - {role}:")
 
                 tests = test_spec["tests"]
                 schema = test_spec["schema"]
 
-                for test_cls in tests:
+                for test_cls in sorted(tests, key=lambda fn: fn.__name__):
                     pprint_case(test_cls)
+
                 if not tests:
                     print("     - <no tests>")
 
@@ -59,7 +61,7 @@ def _pprint_tests(path: Path = Path(), include="*"):
                 if charms:
                     print("     - charms:")
                     charm: _CharmTestConfig
-                    for charm in charms:
+                    for charm in sorted(charms):
                         if isinstance(charm, str):
                             print("       - <BADLY FORMATTED>")
                             continue
