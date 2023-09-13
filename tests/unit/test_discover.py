@@ -1,5 +1,6 @@
-from interface_tester.cli.discover import pprint_tests
 from utils import CRI_LIKE_PATH
+
+from interface_tester.cli.discover import pprint_tests
 
 
 def test_discover(capsys):
