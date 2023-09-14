@@ -11,20 +11,19 @@ correctly.
 """
 import dataclasses
 import importlib
+import inspect
 import json
 import logging
 import sys
 import types
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, TypedDict
+from typing import Callable, Dict, List, Literal, Optional, Type, TypedDict
 
 import pydantic
 import yaml
 
-from .interface_test import DataBagSchema, Role, get_registered_test_cases
-
-if TYPE_CHECKING:
-    from .interface_test import _InterfaceTestCase
+from interface_tester.interface_test import Role
+from interface_tester.schema_base import DataBagSchema
 
 logger = logging.getLogger("interface_tests_checker")
 
@@ -71,7 +70,7 @@ class _CharmsDotYamlSpec(TypedDict):
 class _RoleTestSpec(TypedDict):
     """The tests, schema, and charms for a single role of a given relation interface version."""
 
-    tests: List["_InterfaceTestCase"]
+    tests: List[Callable[[None], None]]
     schema: Optional[Type[DataBagSchema]]
     charms: List[_CharmTestConfig]
 
@@ -125,13 +124,13 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
 def get_schemas(file: Path) -> Dict[Literal["requirer", "provider"], Type[DataBagSchema]]:
     """Load databag schemas from schema.py file."""
     if not file.exists():
-        logger.warning(f"File does not exist: {file}")
+        logger.warning("File does not exist: %s" % file)
         return {}
 
     try:
         module = load_schema_module(file)
     except ImportError as e:
-        logger.error(f"Failed to load module {file}: {e}")
+        logger.error("Failed to load module %s: %s" % (file, e))
         return {}
 
     out = {}
@@ -140,12 +139,12 @@ def get_schemas(file: Path) -> Dict[Literal["requirer", "provider"], Type[DataBa
             out[role] = get_schema_from_module(module, name)
         except NameError:
             logger.warning(
-                f"Failed to load {name} from {file}: " f"schema not defined for role: {role}."
+                "Failed to load %s from %s: schema not defined for role: %s." % (name, file, role)
             )
         except TypeError as e:
             logger.error(
-                f"Found object called {name!r} in {file}; "
-                f"expecting a DataBagSchema subclass, not {e.args[0]!r}."
+                "Found object called %s in %s; expecting a DataBagSchema subclass, not %s."
+                % (name, file, e.args[0])
             )
     return out
 
@@ -163,9 +162,9 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
     try:
         charms = yaml.safe_load(charms_yaml.read_text())
     except (json.JSONDecodeError, yaml.YAMLError) as e:
-        logger.error(f"failed to decode {charms_yaml}: " f"verify that it is valid: {e}")
+        logger.error("failed to decode %s: verify that it is valid yaml: %s" % (charms_yaml, e))
     except FileNotFoundError as e:
-        logger.error(f"not found: {e}")
+        logger.error("not found: %s" % e)
     if not charms:
         return None
 
@@ -188,14 +187,22 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
                 cfg = _CharmTestConfig(**item)
             except TypeError:
                 logger.error(
-                    f"failure parsing {item} to _CharmTestConfig; invalid charm test "
-                    f"configuration in {version_dir}/charms.yaml:providers"
+                    "failure parsing %s to _CharmTestConfig; invalid charm test "
+                    "configuration in %s/charms.yaml:providers" % (item, version_dir)
                 )
                 continue
             destination.append(cfg)
 
     spec: _CharmsDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
     return spec
+
+
+def _scrape_module_for_tests(module: types.ModuleType) -> List[Callable[[None], None]]:
+    tests = []
+    for name, obj in inspect.getmembers(module):
+        if inspect.isfunction(obj):
+            tests.append(obj)
+    return tests
 
 
 def _gather_test_cases_for_version(version_dir: Path, interface_name: str, version: int):
@@ -210,24 +217,23 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
         # so we can import without tricks
         sys.path.append(str(interface_tests_dir))
 
-        for possible_test_file in interface_tests_dir.glob("*.py"):
-            # strip .py
-            module_name = str(possible_test_file.with_suffix("").name)
+        for role in Role:
+            module_name = "test_requirer" if role is Role.requirer else "test_provider"
             try:
-                importlib.import_module(module_name)
+                module = importlib.import_module(module_name)
             except ImportError as e:
-                logger.error(f"Failed to load module {possible_test_file}: {e}")
+                logger.error("Failed to load module %s: %s" % (module_name, e))
                 continue
 
-            cases = get_registered_test_cases()
+            tests = _scrape_module_for_tests(module)
+
             del sys.modules[module_name]
 
-            # print(cases)
-            provider_test_cases.extend(cases[(interface_name, version, Role.provider)])
-            requirer_test_cases.extend(cases[(interface_name, version, Role.requirer)])
+            tgt = provider_test_cases if role is Role.provider else requirer_test_cases
+            tgt.extend(tests)
 
         if not (requirer_test_cases or provider_test_cases):
-            logger.error(f"no valid test case files found in {interface_tests_dir}")
+            logger.error("no valid test case files found in %s" % interface_tests_dir)
 
         # remove from import search path
         sys.path.pop(-1)
@@ -277,7 +283,9 @@ def _gather_tests_for_interface(
         try:
             version_n = int(version_dir.name[1:])
         except TypeError:
-            logger.error(f"Unable to parse version {version_dir.name} as an integer. Skipping...")
+            logger.error(
+                "Unable to parse version %s as an integer. Skipping..." % version_dir.name
+            )
             continue
         tests[version_dir.name] = gather_test_spec_for_version(
             version_dir, interface_name, version_n
@@ -298,14 +306,14 @@ def collect_tests(path: Path, include: str = "*") -> Dict[str, Dict[str, Interfa
             - name: foo
               url: www.github.com/canonical/foo
     """
-    logger.info(f"collecting tests from {path}:{include}")
+    logger.info("collecting tests from %s: %s" % (path, include))
     tests = {}
 
     for interface_dir in (path / "interfaces").glob(include):
         interface_dir_name = interface_dir.name
         if interface_dir_name.startswith("__"):  # ignore __template__ and python-dirs
             continue  # skip
-        logger.info(f"collecting tests for interface {interface_dir_name}")
+        logger.info("collecting tests for interface %s" % interface_dir_name)
         interface_name = interface_dir_name.replace("-", "_")
         tests[interface_name] = _gather_tests_for_interface(interface_dir, interface_name)
 

@@ -1,0 +1,5 @@
+providers:
+  - name: foo-k8s
+    url: https://github.com/canonical/foo-k8s-operator
+
+requirers: []

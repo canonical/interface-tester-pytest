@@ -14,3 +14,7 @@ class InterfaceTestsFailed(RuntimeError):
 
 class NoTestsRun(RuntimeError):
     """Raised if no interface test was collected during a run() call."""
+
+
+class SchemaValidationError(RuntimeError):
+    """Raised when schema validation fails on one or more relations."""
