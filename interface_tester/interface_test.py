@@ -60,12 +60,14 @@ class _InterfaceTestContext:
     """Charm actions.yaml"""
     test_fn: Callable
     """Test function."""
+    state_template: Optional[State]
+    """Initial state that this test should be run with, according to the charm."""
 
     """The role (provider|requirer) that this test is about."""
     schema: Optional["DataBagSchema"] = None
     """Databag schema to validate the output relation with."""
     input_state: Optional[State] = None
-    """Initial state that this test should be run with."""
+    """Initial state that this test should be run with, according to the test."""
 
 
 def check_test_case_validator_signature(fn: Callable):
@@ -206,7 +208,6 @@ class Tester:
         if not self.ctx:
             raise RuntimeError("Tester can only be initialized inside an interface test context.")
 
-        self._state_template = None
         self._state_in = state_in or State()
         self._test_name = name or self.ctx.test_fn.__name__
 
@@ -351,7 +352,7 @@ class Tester:
         # some required config, a "happy" status, network information, OTHER relations.
         # Typically, should NOT touch the relation that this interface test is about
         #  -> so we overwrite and warn on conflict: state_template is the baseline,
-        state = (self._state_template or State()).copy()
+        state = (self.ctx.state_template or State()).copy()
 
         relations = self._generate_relations_state(
             state, input_state, self.ctx.supported_endpoints, self.ctx.role
