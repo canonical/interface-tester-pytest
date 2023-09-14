@@ -32,10 +32,10 @@ class InterfaceTester:
     _RAISE_IMMEDIATELY = False
 
     def __init__(
-            self,
-            repo: str = "https://github.com/canonical/charm-relation-interfaces",
-            branch: str = "main",
-            base_path: str = "interfaces",
+        self,
+        repo: str = "https://github.com/canonical/charm-relation-interfaces",
+        branch: str = "main",
+        base_path: str = "interfaces",
     ):
         self._repo = repo
         self._branch = branch
@@ -53,18 +53,18 @@ class InterfaceTester:
         self._charm_spec_cache = None
 
     def configure(
-            self,
-            *,
-            charm_type: Optional[Type[CharmType]] = None,
-            repo: Optional[str] = None,
-            branch: Optional[str] = None,
-            base_path: Optional[str] = None,
-            interface_name: Optional[str] = None,
-            interface_version: Optional[int] = None,
-            state_template: Optional[State] = None,
-            meta: Optional[Dict[str, Any]] = None,
-            actions: Optional[Dict[str, Any]] = None,
-            config: Optional[Dict[str, Any]] = None,
+        self,
+        *,
+        charm_type: Optional[Type[CharmType]] = None,
+        repo: Optional[str] = None,
+        branch: Optional[str] = None,
+        base_path: Optional[str] = None,
+        interface_name: Optional[str] = None,
+        interface_version: Optional[int] = None,
+        state_template: Optional[State] = None,
+        meta: Optional[Dict[str, Any]] = None,
+        actions: Optional[Dict[str, Any]] = None,
+        config: Optional[Dict[str, Any]] = None,
     ):
         """
 
@@ -189,11 +189,11 @@ class InterfaceTester:
 
             repo_name = self._repo.split("/")[-1]
             intf_spec_path = (
-                    Path(tempdir)
-                    / repo_name
-                    / self._base_path
-                    / self._interface_name.replace("-", "_")
-                    / f"v{self._interface_version}"
+                Path(tempdir)
+                / repo_name
+                / self._base_path
+                / self._interface_name.replace("-", "_")
+                / f"v{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
@@ -239,7 +239,7 @@ class InterfaceTester:
         return supported_endpoints
 
     def _yield_tests(
-            self,
+        self,
     ) -> Generator[Tuple[Callable, RoleLiteral, DataBagSchema], None, None]:
         """Yield all test cases applicable to this charm and interface.
 
@@ -324,14 +324,16 @@ class InterfaceTester:
 
         # todo: consider raising custom exceptions here.
         if errors:
-
             msgs = []
             for ctx, e in errors:
-                msgs.append(f" - {ctx.interface_name}[v{ctx.version}]@{ctx.role}:{ctx.test_fn} raised {e}")
+                msgs.append(
+                    f" - {ctx.interface_name}[v{ctx.version}]@{ctx.role}:{ctx.test_fn} raised {e}"
+                )
             long_msg = "\n".join(msgs)
 
             raise InterfaceTestsFailed(
-                f"interface tests completed with {len(errors)} errors. \n" + long_msg)
+                f"interface tests completed with {len(errors)} errors. \n" + long_msg
+            )
 
         if not ran_some:
             msg = f"no tests gathered for {self._interface_name}/v{self._interface_version}"
