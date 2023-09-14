@@ -231,7 +231,7 @@ class Tester:
         """
         return _TESTER_CTX
 
-    def run(self, event: Union[str, Event]) -> "State":
+    def run(self, event: Union[str, Event]) -> State:
         """Simulate the emission on an event in the initial state you passed to the initializer.
 
         Calling this method will run scenario and verify that the charm being tested can handle
