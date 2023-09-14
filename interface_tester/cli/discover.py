@@ -61,7 +61,7 @@ def _pprint_tests(path: Path = Path(), include="*"):
                 if charms:
                     print("     - charms:")
                     charm: _CharmTestConfig
-                    for charm in sorted(charms):
+                    for charm in sorted(charms, key=lambda cfg: cfg.name):
                         if isinstance(charm, str):
                             print("       - <BADLY FORMATTED>")
                             continue
