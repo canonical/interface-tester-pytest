@@ -2,9 +2,11 @@
 # See LICENSE file for licensing details.
 import pytest
 
-from interface_tester.interface_test import Tester  # noqa F401
+from interface_tester.interface_test import Tester
 from interface_tester.plugin import InterfaceTester
-from interface_tester.schema_base import DataBagSchema  # noqa: F401
+from interface_tester.schema_base import DataBagSchema
+
+__all__ = ["Tester", "InterfaceTester", "DataBagSchema"]
 
 
 @pytest.fixture(scope="function")
