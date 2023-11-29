@@ -188,6 +188,9 @@ class InterfaceTester:
                 )
 
             repo_name = self._repo.split("/")[-1]
+            if repo_name.endswith(".git"):
+                repo_name = repo_name.rsplit(".", maxsplit=1)[0]
+
             intf_spec_path = (
                 Path(tempdir)
                 / repo_name
