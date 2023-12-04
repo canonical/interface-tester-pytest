@@ -48,6 +48,7 @@ class InterfaceTester:
         self._config = None
         self._interface_name = None
         self._interface_version = 0
+        self._juju_version = None
         self._state_template = None
 
         self._charm_spec_cache = None
@@ -62,6 +63,7 @@ class InterfaceTester:
         interface_name: Optional[str] = None,
         interface_version: Optional[int] = None,
         state_template: Optional[State] = None,
+        juju_version: Optional[str] = None,
         meta: Optional[Dict[str, Any]] = None,
         actions: Optional[Dict[str, Any]] = None,
         config: Optional[Dict[str, Any]] = None,
@@ -79,6 +81,8 @@ class InterfaceTester:
         :param meta: charm metadata.yaml contents.
         :param actions: charm actions.yaml contents.
         :param config: charm config.yaml contents.
+        :param juju_version: juju version that Scenario will simulate (also sets JUJU_VERSION
+            envvar at charm runtime.)
         """
         if charm_type:
             self._charm_type = charm_type
@@ -100,6 +104,8 @@ class InterfaceTester:
             self._branch = branch
         if base_path:
             self._base_path = base_path
+        if juju_version:
+            self._juju_version = juju_version
 
     def _validate_config(self):
         """Validate the configuration of the tester.
@@ -290,6 +296,7 @@ class InterfaceTester:
         \tconfig={self._config}
         \tinterface_name={self._interface_name}
         \tinterface_version={self._interface_version}
+        \tjuju_version={self._juju_version}
         \tstate_template={self._state_template}>"""
 
     def run(self) -> bool:
@@ -315,6 +322,7 @@ class InterfaceTester:
                 actions=self.actions,
                 supported_endpoints=self._gather_supported_endpoints(),
                 test_fn=test_fn,
+                juju_version=self._juju_version,
             )
             try:
                 with tester_context(ctx):
