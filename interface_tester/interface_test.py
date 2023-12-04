@@ -376,14 +376,14 @@ class Tester:
 
         kwargs = {}
         if self.ctx.juju_version:
-            kwargs['juju_version'] = self.ctx.juju_version
+            kwargs["juju_version"] = self.ctx.juju_version
 
         ctx = Context(
             self.ctx.charm_type,
             meta=self.ctx.meta,
             actions=self.ctx.actions,
             config=self.ctx.config,
-            **kwargs
+            **kwargs,
         )
         return ctx.run(event, state)
 
