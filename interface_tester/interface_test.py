@@ -69,6 +69,9 @@ class _InterfaceTestContext:
     input_state: Optional[State] = None
     """Initial state that this test should be run with, according to the test."""
 
+    juju_version: Optional[str] = None
+    """The juju version Scenario will simulate. Defaults to whatever Scenario's default is."""
+
 
 def check_test_case_validator_signature(fn: Callable):
     """Verify the signature of a test case validator function.
@@ -371,11 +374,16 @@ class Tester:
     def _run_scenario(self, event: Event, state: State):
         logger.debug("running scenario with state=%s, event=%s" % (state, event))
 
+        kwargs = {}
+        if self.ctx.juju_version:
+            kwargs["juju_version"] = self.ctx.juju_version
+
         ctx = Context(
             self.ctx.charm_type,
             meta=self.ctx.meta,
             actions=self.ctx.actions,
             config=self.ctx.config,
+            **kwargs,
         )
         return ctx.run(event, state)
 
