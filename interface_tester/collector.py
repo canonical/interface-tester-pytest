@@ -222,7 +222,7 @@ def _gather_test_cases_for_version(version_dir: Path, interface_name: str, versi
             try:
                 module = importlib.import_module(module_name)
             except ImportError as e:
-                logger.error("Failed to load module %s: %s" % (module_name, e))
+                logger.warning("Failed to load module %s: %s" % (module_name, e))
                 continue
 
             tests = _scrape_module_for_tests(module)
