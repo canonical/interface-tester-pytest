@@ -15,7 +15,7 @@ def test_load_schema_module(tmp_path):
     pth.write_text(
         dedent(
             """
-FOO = 1
+FOO: int = 1
         """
         )
     )
@@ -35,7 +35,7 @@ def test_collect_schemas(tmp_path):
             """from interface_tester.schema_base import DataBagSchema
                 
 class RequirerSchema(DataBagSchema):
-    foo = 1"""
+    foo: int = 1"""
         )
     )
 
@@ -54,7 +54,7 @@ def test_collect_schemas_multiple(tmp_path):
             """from interface_tester.schema_base import DataBagSchema
 
 class RequirerSchema(DataBagSchema):
-    foo = 1"""
+    foo: int = 1"""
         )
     )
 
@@ -65,13 +65,13 @@ class RequirerSchema(DataBagSchema):
             """from interface_tester.schema_base import DataBagSchema
 
 class RequirerSchema(DataBagSchema):
-    foo = 2"""
+    foo: int = 2"""
         )
     )
 
     tests = collect_tests(root)
-    assert tests["mytestinterfacea"]["v0"]["requirer"]["schema"].__fields__["foo"].default == 1
-    assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].__fields__["foo"].default == 2
+    assert tests["mytestinterfacea"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 1
+    assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 2
 
 
 def test_collect_invalid_schemas(tmp_path):
@@ -84,7 +84,7 @@ def test_collect_invalid_schemas(tmp_path):
         dedent(
             """from interface_tester.schema_base import DataBagSchema
 class ProviderSchema(DataBagSchema):
-    foo = 2"""
+    foo: int = 2"""
         )
     )
 
@@ -95,9 +95,9 @@ class ProviderSchema(DataBagSchema):
 @pytest.mark.parametrize(
     "schema_source, schema_name",
     (
-        (dedent("""Foo2=1"""), "Foo2"),
-        (dedent("""Bar='baz'"""), "Bar"),
-        (dedent("""Baz=[1,2,3]"""), "Baz"),
+        (dedent("""Foo2: int=1"""), "Foo2"),
+        (dedent("""Bar: str='baz'"""), "Bar"),
+        (dedent("""Baz: list[int]=[1,2,3]"""), "Baz"),
     ),
 )
 def test_get_schema_from_module_wrong_type(tmp_path, schema_source, schema_name):
@@ -114,7 +114,7 @@ def test_get_schema_from_module_wrong_type(tmp_path, schema_source, schema_name)
 @pytest.mark.parametrize("schema_name", ("foo", "bar", "baz"))
 def test_get_schema_from_module_bad_name(tmp_path, schema_name):
     pth = Path(tmp_path) / "bar3.py"
-    pth.write_text("dead='beef'")
+    pth.write_text("dead: str='beef'")
     module = load_schema_module(pth)
 
     # fails because it's not found in the module

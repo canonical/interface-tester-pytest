@@ -283,14 +283,14 @@ class Tester:
         errors = []
         for relation in self._relations:
             try:
-                databag_schema.validate(
+                databag_schema.model_validate(
                     {
                         "unit": relation.local_unit_data,
                         "app": relation.local_app_data,
                     }
                 )
             except ValidationError as e:
-                errors.append(e.args[0])
+                errors.append(e.errors()[0])
         if errors:
             raise SchemaValidationError(errors)
 
