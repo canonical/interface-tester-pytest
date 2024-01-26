@@ -97,10 +97,15 @@ class ProviderSchema(DataBagSchema):
     (
         (dedent("""Foo2: int=1"""), "Foo2"),
         (dedent("""Bar: str='baz'"""), "Bar"),
-        (dedent("""
+        (
+            dedent(
+                """
         from typing import List
         
-        Baz: List[int]=[1,2,3]"""), "Baz"),
+        Baz: List[int]=[1,2,3]"""
+            ),
+            "Baz",
+        ),
     ),
 )
 def test_get_schema_from_module_wrong_type(tmp_path, schema_source, schema_name):
