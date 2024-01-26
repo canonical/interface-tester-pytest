@@ -105,11 +105,6 @@ def load_schema_module(schema_path: Path) -> types.ModuleType:
     if module_name in sys.modules:
         del sys.modules[module_name]
 
-    # Otherwise we'll get an error when we re-run @validator
-    # fixme: is there a better way to do this?
-    logger.debug("Clearing pydantic.class_validators._FUNCS")
-    pydantic.class_validators._FUNCS.clear()  # noqa
-
     try:
         module = importlib.import_module(module_name)
     except ImportError:
