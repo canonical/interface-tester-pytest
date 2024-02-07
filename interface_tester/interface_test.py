@@ -290,7 +290,7 @@ class Tester:
                     }
                 )
             except ValidationError as e:
-                errors.append(e.args[0])
+                errors.append(str(e))
         if errors:
             raise SchemaValidationError(errors)
 
@@ -426,6 +426,20 @@ class Tester:
                 f"Invalid test case: {self} cannot cast {raw_event} to Event."
             )
 
+    @staticmethod
+    def _get_endpoint(supported_endpoints: dict, role: Role, interface_name: str):
+        endpoints_for_interface = supported_endpoints[role]
+
+        if len(endpoints_for_interface) < 1:
+            raise ValueError(f"no endpoint found for {role}/{interface_name}.")
+        elif len(endpoints_for_interface) > 1:
+            raise ValueError(
+                f"Multiple endpoints found for {role}/{interface_name}: "
+                f"{endpoints_for_interface}: cannot guess which one it is "
+                f"we're supposed to be testing"
+            )
+        return endpoints_for_interface[0]
+
     def _generate_relations_state(
         self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
@@ -436,6 +450,9 @@ class Tester:
         be passed to the 'final' State the test will run with.
         """
         interface_name = self.ctx.interface_name
+
+        # determine what charm endpoint we're testing.
+        endpoint = self._get_endpoint(supported_endpoints, role, interface_name=interface_name)
 
         for rel in state_template.relations:
             if rel.interface == interface_name:
@@ -448,18 +465,29 @@ class Tester:
         def filter_relations(rels: List[Relation], op: Callable):
             return [r for r in rels if op(r.interface, interface_name)]
 
-        # the baseline is: all relations whose interface IS NOT the interface we're testing.
+        # the baseline is: all relations provided by the charm in the state_template,
+        # whose interface IS NOT the interface we're testing. We assume the test (input_state) is
+        # the ultimate owner of the state when it comes to the interface we're testing.
+        # We don't allow the charm to mess with it.
         relations = filter_relations(state_template.relations, op=operator.ne)
 
         if input_state:
-            # if the charm we're testing specified some relations in its input state, we add those
-            # whose interface IS the same as the one we're testing. If other relation interfaces
-            # were specified, they will be ignored.
-            relations.extend(filter_relations(input_state.relations, op=operator.eq))
+            # if the interface test we're running specified some relations in its input_state,
+            # we add those whose interface IS the same as the one we're testing.
+            # If other relation interfaces were specified (for whatever reason?),
+            # they will be ignored.
+            relations_from_input_state = filter_relations(input_state.relations, op=operator.eq)
 
-            if ignored := filter_relations(input_state.relations, op=operator.eq):
+            # relations that come from the state_template presumably have the right endpoint,
+            # but those that we get from interface tests cannot.
+            relations_with_endpoint = [r.replace(endpoint=endpoint) for r in relations_from_input_state]
+
+            relations.extend(relations_with_endpoint)
+
+            if ignored := filter_relations(input_state.relations, op=operator.ne):
+                # this is a sign of a bad test.
                 logger.warning(
-                    "irrelevant relations specified in input state for %s/%s."
+                    "irrelevant relations specified in input_state for %s/%s."
                     "These will be ignored. details: %s" % (interface_name, role, ignored)
                 )
 
@@ -468,19 +496,6 @@ class Tester:
         if not filter_relations(relations, op=operator.eq):
             # if neither the charm nor the interface specified any custom relation spec for
             # the interface we're testing, we will provide one.
-            endpoints_for_interface = supported_endpoints[role]
-
-            if len(endpoints_for_interface) < 1:
-                raise ValueError(f"no endpoint found for {role}/{interface_name}.")
-            elif len(endpoints_for_interface) > 1:
-                raise ValueError(
-                    f"Multiple endpoints found for {role}/{interface_name}: "
-                    f"{endpoints_for_interface}: cannot guess which one it is "
-                    f"we're supposed to be testing"
-                )
-            else:
-                endpoint = endpoints_for_interface[0]
-
             relations.append(
                 Relation(
                     interface=interface_name,
@@ -491,4 +506,5 @@ class Tester:
             "%s: merged %s and %s --> relations=%s"
             % (self, input_state, state_template, relations)
         )
+
         return relations

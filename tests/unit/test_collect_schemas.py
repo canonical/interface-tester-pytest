@@ -35,7 +35,7 @@ def test_collect_schemas(tmp_path):
             """from interface_tester.schema_base import DataBagSchema
                 
 class RequirerSchema(DataBagSchema):
-    foo = 1"""
+    foo: int = 1"""
         )
     )
 
@@ -54,7 +54,7 @@ def test_collect_schemas_multiple(tmp_path):
             """from interface_tester.schema_base import DataBagSchema
 
 class RequirerSchema(DataBagSchema):
-    foo = 1"""
+    foo:int = 1"""
         )
     )
 
@@ -65,7 +65,7 @@ class RequirerSchema(DataBagSchema):
             """from interface_tester.schema_base import DataBagSchema
 
 class RequirerSchema(DataBagSchema):
-    foo = 2"""
+    foo:int = 2"""
         )
     )
 
@@ -84,7 +84,7 @@ def test_collect_invalid_schemas(tmp_path):
         dedent(
             """from interface_tester.schema_base import DataBagSchema
 class ProviderSchema(DataBagSchema):
-    foo = 2"""
+    foo:int = 2"""
         )
     )
 
