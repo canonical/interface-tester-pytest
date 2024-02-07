@@ -33,7 +33,8 @@ _has_pydantic_v1 = pydantic.version.VERSION.split(".") <= ["2"]
 if _has_pydantic_v1:
     logger.warning(
         "You seem to be using pydantic v1. "
-        "Please upgrade to v2, as compatibility may be dropped in a future version of pytest-interface-tester."
+        "Please upgrade to v2, as compatibility may be dropped in a future version of "
+        "pytest-interface-tester."
     )
 
 
