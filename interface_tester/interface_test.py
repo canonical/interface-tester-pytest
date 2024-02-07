@@ -480,7 +480,9 @@ class Tester:
 
             # relations that come from the state_template presumably have the right endpoint,
             # but those that we get from interface tests cannot.
-            relations_with_endpoint = [r.replace(endpoint=endpoint) for r in relations_from_input_state]
+            relations_with_endpoint = [
+                r.replace(endpoint=endpoint) for r in relations_from_input_state
+            ]
 
             relations.extend(relations_with_endpoint)
 

@@ -107,7 +107,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -133,7 +133,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -160,7 +160,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -186,7 +186,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -213,7 +213,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -239,7 +239,7 @@ from interface_tester.interface_test import Tester
 def test_data_on_changed():
     t = Tester(State(
         relations=[Relation(
-            endpoint='tracing',
+            endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
@@ -285,7 +285,7 @@ def test_valid_run():
  def test_data_on_changed():
      t = Tester(State(
          relations=[Relation(
-             endpoint='tracing',
+             endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
              interface='tracing',
              remote_app_name='remote',
              local_app_data={}
@@ -312,7 +312,7 @@ def test_valid_run_default_schema():
  def test_data_on_changed():
      t = Tester(State(
          relations=[Relation(
-             endpoint='tracing',
+             endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"1"},
@@ -355,7 +355,7 @@ def test_default_schema_validation_failure():
  def test_data_on_changed():
      t = Tester(State(
          relations=[Relation(
-             endpoint='tracing',
+             endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"abc"},
@@ -408,7 +408,7 @@ def test_valid_run_custom_schema():
  def test_data_on_changed():
      t = Tester(State(
          relations=[Relation(
-             endpoint='tracing',
+             endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"1"},
@@ -445,7 +445,7 @@ def test_invalid_custom_schema():
  def test_data_on_changed():
      t = Tester(State(
          relations=[Relation(
-             endpoint='tracing',
+             endpoint='foobadooble',  # should not matter: the charm says on what endpoint it uses 'tracing'
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"abc"},
