@@ -283,7 +283,7 @@ class Tester:
         errors = []
         for relation in self._relations:
             try:
-                databag_schema.validate(
+                databag_schema.model_validate(
                     {
                         "unit": relation.local_unit_data,
                         "app": relation.local_app_data,
