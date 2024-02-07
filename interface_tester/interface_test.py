@@ -297,7 +297,7 @@ class Tester:
                     {
                         "unit": relation.local_unit_data,
                         "app": relation.local_app_data,
-                    }
+                    },
                 )
             except ValidationError as e:
                 errors.append(str(e))
@@ -451,7 +451,7 @@ class Tester:
         return endpoints_for_interface[0]
 
     def _generate_relations_state(
-            self, state_template: State, input_state: State, supported_endpoints, role: Role
+        self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 

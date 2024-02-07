@@ -3,12 +3,12 @@ from textwrap import dedent
 
 import pytest
 
-from interface_tester.interface_test import _has_pydantic_v1
 from interface_tester.collector import (
     collect_tests,
     get_schema_from_module,
     load_schema_module,
 )
+from interface_tester.interface_test import _has_pydantic_v1
 
 
 def test_load_schema_module(tmp_path):
@@ -76,8 +76,12 @@ class RequirerSchema(DataBagSchema):
         assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].__fields__["foo"].default == 2
 
     else:
-        assert tests["mytestinterfacea"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 1
-        assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 2
+        assert (
+            tests["mytestinterfacea"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 1
+        )
+        assert (
+            tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 2
+        )
 
 
 def test_collect_invalid_schemas(tmp_path):
