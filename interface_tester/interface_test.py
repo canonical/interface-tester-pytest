@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Callable, List, Literal, Optional, Union
 
+import pydantic
 from ops.testing import CharmType
 from pydantic import ValidationError
 from scenario import Context, Event, Relation, State
@@ -27,6 +28,14 @@ if typing.TYPE_CHECKING:
 INTF_NAME_AND_VERSION_REGEX = re.compile(r"/interfaces/(\w+)/v(\d+)/")
 
 logger = logging.getLogger(__name__)
+
+_has_pydantic_v1 = pydantic.version.VERSION.split(".") <= ["2"]
+
+
+def _validate(model: pydantic.BaseModel, obj: dict):
+    if _has_pydantic_v1:
+        return model.validate(obj)
+    return model.model_validate(obj)
 
 
 class InvalidTestCase(RuntimeError):
@@ -283,7 +292,8 @@ class Tester:
         errors = []
         for relation in self._relations:
             try:
-                databag_schema.model_validate(
+                _validate(
+                    databag_schema,
                     {
                         "unit": relation.local_unit_data,
                         "app": relation.local_app_data,
@@ -441,7 +451,7 @@ class Tester:
         return endpoints_for_interface[0]
 
     def _generate_relations_state(
-        self, state_template: State, input_state: State, supported_endpoints, role: Role
+            self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 
