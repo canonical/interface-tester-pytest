@@ -328,7 +328,7 @@ class InterfaceTester:
                 with tester_context(ctx):
                     test_fn()
             except Exception as e:
-                logger.error(f"Interface tester plugin failed with {e}", exc_info=True)
+                logger.exception(f"Interface tester plugin failed with {e}")
 
                 if self._RAISE_IMMEDIATELY:
                     raise e
