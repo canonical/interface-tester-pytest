@@ -30,6 +30,11 @@ INTF_NAME_AND_VERSION_REGEX = re.compile(r"/interfaces/(\w+)/v(\d+)/")
 logger = logging.getLogger(__name__)
 
 _has_pydantic_v1 = pydantic.version.VERSION.split(".") <= ["2"]
+if _has_pydantic_v1:
+    logger.warning(
+        "You seem to be using pydantic v1. "
+        "Please upgrade to v2, as compatibility may be dropped in a future version of pytest-interface-tester."
+    )
 
 
 def _validate(model: pydantic.BaseModel, obj: dict):
