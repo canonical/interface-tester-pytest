@@ -14,6 +14,7 @@ import pydantic
 from ops.testing import CharmType
 from pydantic import ValidationError
 from scenario import Context, Event, Relation, State
+from scenario.state import _EventPath
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
 
@@ -381,8 +382,7 @@ class Tester:
 
         # the Relation instance this test is about:
         relation = next(filter(lambda r: r.interface == self.ctx.interface_name, relations))
-        # test.EVENT might be a string or an Event. Cast to Event.
-        evt: Event = self._coerce_event(event, relation)
+        evt: Event = self._cast_event(event, relation)
 
         logger.info("collected test for %s with %s" % (self.ctx.interface_name, evt.name))
         return self._run_scenario(evt, modified_state)
@@ -403,44 +403,34 @@ class Tester:
         )
         return ctx.run(event, state)
 
-    def _coerce_event(self, raw_event: Union[str, Event], relation: Relation) -> Event:
-        # if the event being tested is a relation event, we need to inject some metadata
-        # or scenario.Runtime won't be able to guess what envvars need setting before ops.main
-        # takes over
-        if isinstance(raw_event, str):
-            ep_name, _, evt_kind = raw_event.rpartition("-relation-")
-            if ep_name and evt_kind:
-                # this is a relation event.
-                # we inject the relation metadata
-                # todo: if the user passes a relation event that is NOT about the relation
-                #  interface that this test is about, at this point we are injecting the wrong
-                #  Relation instance.
-                #  e.g. if in interfaces/foo one wants to test that if 'bar-relation-joined' is
-                #  fired... then one would have to pass an Event instance already with its
-                #  own Relation.
-                return Event(
-                    raw_event,
-                    relation=relation.replace(endpoint=ep_name),
-                )
+    def _cast_event(self, raw_event: Union[str, Event], relation: Relation):
+        # test.EVENT might be a string or an Event. Cast to Event.
+        event = Event(raw_event) if isinstance(raw_event, str) else raw_event
 
-            else:
-                return Event(raw_event)
-
-        elif isinstance(raw_event, Event):
-            if raw_event._is_relation_event and not raw_event.relation:
-                raise InvalidTestCaseError(
-                    "This test case was passed an Event representing a relation event."
-                    "However it does not have a Relation. Please pass it to the Event like so: "
-                    "evt = Event('my_relation_changed', relation=Relation(...))"
-                )
-
-            return raw_event
-
-        else:
+        if not isinstance(event, Event):
             raise InvalidTestCaseError(
                 f"Expected Event or str, not {type(raw_event)}. "
                 f"Invalid test case: {self} cannot cast {raw_event} to Event."
             )
+
+        if not event._is_relation_event:
+            raise InvalidTestCaseError(f"Bad interface test specification: event {raw_event} "
+                                       "is not a relation event.")
+
+        # todo: if the user passes a relation event that is NOT about the relation
+        #  interface that this test is about, at this point we are injecting the wrong
+        #  Relation instance.
+        #  e.g. if in interfaces/foo one wants to test that if 'bar-relation-joined' is
+        #  fired... then one would have to pass an Event instance already with its
+        #  own Relation.
+
+        # next we need to ensure that the event's .relation is our relation, and that the endpoint
+        # in the relation and the event path match that of the charm we're testing.
+        charm_event = event.replace(
+            relation=relation,
+            path=relation.endpoint + typing.cast(_EventPath, event.path).suffix)
+
+        return charm_event
 
     @staticmethod
     def _get_endpoint(supported_endpoints: dict, role: Role, interface_name: str):
@@ -457,7 +447,7 @@ class Tester:
         return endpoints_for_interface[0]
 
     def _generate_relations_state(
-        self, state_template: State, input_state: State, supported_endpoints, role: Role
+            self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 

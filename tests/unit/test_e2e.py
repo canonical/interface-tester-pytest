@@ -40,8 +40,9 @@ def interface_tester():
         charm_type=DummiCharm,
         meta={
             "name": "dummi",
-            "provides": {"tracing": {"interface": "tracing"}},
-            "requires": {"tracing-req": {"interface": "tracing"}},
+            # interface tests should be agnostic to endpoint names
+            "provides": {"dead": {"interface": "tracing"}},
+            "requires": {"beef-req": {"interface": "tracing"}},
         },
         state_template=State(leader=True),
     )
@@ -87,8 +88,9 @@ def _setup_with_test_file(test_file: str, schema_file: str = None):
         charm_type=DummiCharm,
         meta={
             "name": "dummi",
-            "provides": {"tracing": {"interface": "tracing"}},
-            "requires": {"tracing-req": {"interface": "tracing"}},
+            # interface tests should be agnostic to endpoint names
+            "provides": {"dead": {"interface": "tracing"}},
+            "requires": {"beef-req": {"interface": "tracing"}},
         },
         state_template=State(leader=True),
     )
@@ -192,7 +194,7 @@ def test_data_on_changed():
             local_app_data={}
         )]
     ))
-    state_out = t.run("tracing-relation-changed")
+    state_out = t.run("axolotl-relation-changed")
     t.assert_schema_valid()
 """
         )
@@ -219,7 +221,7 @@ def test_data_on_changed():
             local_app_data={}
         )]
     ))
-    state_out = t.run("tracing-relation-changed")
+    state_out = t.run("axolotl-relation-changed")
 """
         )
     )
@@ -291,7 +293,7 @@ def test_valid_run():
              local_app_data={}
          )]
      ))
-     state_out = t.run("tracing-relation-changed")
+     state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid(schema=DataBagSchema())
  """
         )
@@ -319,7 +321,7 @@ def test_valid_run_default_schema():
              local_unit_data={"bar": "smackbeef"}
          )]
      ))
-     state_out = t.run("tracing-relation-changed")
+     state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid()
  """
         ),
@@ -362,7 +364,7 @@ def test_default_schema_validation_failure():
              local_unit_data={"bar": "smackbeef"}
          )]
      ))
-     state_out = t.run("tracing-relation-changed")
+     state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid()
  """
         ),
@@ -415,7 +417,7 @@ def test_valid_run_custom_schema():
              local_unit_data={"bar": "smackbeef"}
          )]
      ))
-     state_out = t.run("tracing-relation-changed")
+     state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid(schema=FooBarSchema)
  """
         )
@@ -452,7 +454,7 @@ def test_invalid_custom_schema():
              local_unit_data={"bar": "smackbeef"}
          )]
      ))
-     state_out = t.run("tracing-relation-changed")
+     state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid(schema=FooBarSchema)
  """
         )

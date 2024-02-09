@@ -7,7 +7,7 @@ from subprocess import PIPE, Popen
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type
 
 from ops.testing import CharmType
-from scenario.state import Event, MetadataNotFoundError, State, _CharmSpec
+from scenario.state import MetadataNotFoundError, State, _CharmSpec
 
 from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
 from interface_tester.errors import (
@@ -22,7 +22,6 @@ from interface_tester.interface_test import (
 )
 from interface_tester.schema_base import DataBagSchema
 
-Callback = Callable[[State, Event], None]
 ROLE_TO_ROLE_META = {"provider": "provides", "requirer": "requires"}
 
 logger = logging.getLogger("pytest_interface_tester")
@@ -32,10 +31,10 @@ class InterfaceTester:
     _RAISE_IMMEDIATELY = False
 
     def __init__(
-        self,
-        repo: str = "https://github.com/canonical/charm-relation-interfaces",
-        branch: str = "main",
-        base_path: str = "interfaces",
+            self,
+            repo: str = "https://github.com/canonical/charm-relation-interfaces",
+            branch: str = "main",
+            base_path: str = "interfaces",
     ):
         self._repo = repo
         self._branch = branch
@@ -54,19 +53,19 @@ class InterfaceTester:
         self._charm_spec_cache = None
 
     def configure(
-        self,
-        *,
-        charm_type: Optional[Type[CharmType]] = None,
-        repo: Optional[str] = None,
-        branch: Optional[str] = None,
-        base_path: Optional[str] = None,
-        interface_name: Optional[str] = None,
-        interface_version: Optional[int] = None,
-        state_template: Optional[State] = None,
-        juju_version: Optional[str] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        actions: Optional[Dict[str, Any]] = None,
-        config: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            charm_type: Optional[Type[CharmType]] = None,
+            repo: Optional[str] = None,
+            branch: Optional[str] = None,
+            base_path: Optional[str] = None,
+            interface_name: Optional[str] = None,
+            interface_version: Optional[int] = None,
+            state_template: Optional[State] = None,
+            juju_version: Optional[str] = None,
+            meta: Optional[Dict[str, Any]] = None,
+            actions: Optional[Dict[str, Any]] = None,
+            config: Optional[Dict[str, Any]] = None,
     ):
         """
 
@@ -198,11 +197,11 @@ class InterfaceTester:
                 repo_name = repo_name.rsplit(".", maxsplit=1)[0]
 
             intf_spec_path = (
-                Path(tempdir)
-                / repo_name
-                / self._base_path
-                / self._interface_name.replace("-", "_")
-                / f"v{self._interface_version}"
+                    Path(tempdir)
+                    / repo_name
+                    / self._base_path
+                    / self._interface_name.replace("-", "_")
+                    / f"v{self._interface_version}"
             )
             if not intf_spec_path.exists():
                 raise RuntimeError(
@@ -248,7 +247,7 @@ class InterfaceTester:
         return supported_endpoints
 
     def _yield_tests(
-        self,
+            self,
     ) -> Generator[Tuple[Callable, RoleLiteral, DataBagSchema], None, None]:
         """Yield all test cases applicable to this charm and interface.
 
