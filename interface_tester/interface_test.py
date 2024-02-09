@@ -13,7 +13,7 @@ from typing import Any, Callable, List, Literal, Optional, Union
 import pydantic
 from ops.testing import CharmType
 from pydantic import ValidationError
-from scenario import Context, Event, Relation, State
+from scenario import Context, Event, Relation, State, state
 from scenario.state import _EventPath
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
@@ -323,9 +323,16 @@ class Tester:
                 raise SchemaValidationError(
                     f"test {self._test_id}: local app databag not empty for {relation}"
                 )
-            if relation.local_unit_data:
+
+            # remove the default unit databag keys or we'll get false positives.
+            local_unit_data_keys = set(relation.local_unit_data).difference(
+                set(state.DEFAULT_JUJU_DATABAG.keys())
+            )
+
+            if local_unit_data_keys:
                 raise SchemaValidationError(
-                    f"test {self._test_id}: local unit databag not empty for {relation}"
+                    f"test {self._test_id}: local unit databag not empty for {relation}: "
+                    f"found {local_unit_data_keys!r} keys set"
                 )
         self._has_checked_schema = True
 
@@ -414,8 +421,9 @@ class Tester:
             )
 
         if not event._is_relation_event:
-            raise InvalidTestCaseError(f"Bad interface test specification: event {raw_event} "
-                                       "is not a relation event.")
+            raise InvalidTestCaseError(
+                f"Bad interface test specification: event {raw_event} " "is not a relation event."
+            )
 
         # todo: if the user passes a relation event that is NOT about the relation
         #  interface that this test is about, at this point we are injecting the wrong
@@ -427,8 +435,8 @@ class Tester:
         # next we need to ensure that the event's .relation is our relation, and that the endpoint
         # in the relation and the event path match that of the charm we're testing.
         charm_event = event.replace(
-            relation=relation,
-            path=relation.endpoint + typing.cast(_EventPath, event.path).suffix)
+            relation=relation, path=relation.endpoint + typing.cast(_EventPath, event.path).suffix
+        )
 
         return charm_event
 
@@ -447,7 +455,7 @@ class Tester:
         return endpoints_for_interface[0]
 
     def _generate_relations_state(
-            self, state_template: State, input_state: State, supported_endpoints, role: Role
+        self, state_template: State, input_state: State, supported_endpoints, role: Role
     ) -> List[Relation]:
         """Merge the relations from the input state and the state template into one.
 
