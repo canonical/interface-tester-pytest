@@ -5,17 +5,17 @@ from textwrap import dedent
 import pytest
 from ops import CharmBase
 from scenario import State
+from utils import CRI_LIKE_PATH
 
 from interface_tester import InterfaceTester
 from interface_tester.collector import gather_test_spec_for_version
-from interface_tester.errors import SchemaValidationError, InvalidTestCaseError
+from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
 from interface_tester.interface_test import (
     InvalidTesterRunError,
     NoSchemaError,
     NoTesterInstanceError,
     Tester,
 )
-from utils import CRI_LIKE_PATH
 
 
 class LocalTester(InterfaceTester):
@@ -150,7 +150,9 @@ def test_data_on_changed():
     with pytest.raises(InvalidTestCaseError) as e:
         tester.run()
 
-    assert e.match("Bad interface test specification: event foobadooble-changed is not a relation event.")
+    assert e.match(
+        "Bad interface test specification: event foobadooble-changed is not a relation event."
+    )
 
 
 def test_error_if_assert_relation_data_empty_before_run():
@@ -304,17 +306,10 @@ def test_data_on_changed():
         tester.run()
 
 
-@pytest.mark.parametrize("endpoint", (
-        "foo-one",
-        "prometheus-scrape",
-        "foobadoodle",
-        "foo-one-two"))
-@pytest.mark.parametrize("evt_type", (
-        "changed",
-        "created",
-        "joined",
-        "departed",
-        "broken"))
+@pytest.mark.parametrize(
+    "endpoint", ("foo-one", "prometheus-scrape", "foobadoodle", "foo-one-two")
+)
+@pytest.mark.parametrize("evt_type", ("changed", "created", "joined", "departed", "broken"))
 def test_valid_run(endpoint, evt_type):
     tester = _setup_with_test_file(
         dedent(
