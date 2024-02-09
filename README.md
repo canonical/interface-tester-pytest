@@ -84,4 +84,5 @@ You can customize name and location of the fixture, but you will need to include
 ```
 
 ## Upgrading from v1
-As `pytest-interface-tester` v2 is using `pydantic` v2 that introduces breaking changes to their API, you might need to adjust your tested charm to also support v2. See [migration guide](https://docs.pydantic.dev/latest/migration/) for more information.
+`pytest-interface-tester` supports both pydantic v1 and v2, but using v2 is recommended.
+You might need to adjust your tested charm to also support v2. See [migration guide](https://docs.pydantic.dev/latest/migration/) for more information.

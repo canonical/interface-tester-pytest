@@ -8,6 +8,7 @@ from interface_tester.collector import (
     get_schema_from_module,
     load_schema_module,
 )
+from interface_tester.interface_test import _has_pydantic_v1
 
 
 def test_load_schema_module(tmp_path):
@@ -70,8 +71,17 @@ class RequirerSchema(DataBagSchema):
     )
 
     tests = collect_tests(root)
-    assert tests["mytestinterfacea"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 1
-    assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 2
+    if _has_pydantic_v1:
+        assert tests["mytestinterfacea"]["v0"]["requirer"]["schema"].__fields__["foo"].default == 1
+        assert tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].__fields__["foo"].default == 2
+
+    else:
+        assert (
+            tests["mytestinterfacea"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 1
+        )
+        assert (
+            tests["mytestinterfaceb"]["v0"]["requirer"]["schema"].model_fields["foo"].default == 2
+        )
 
 
 def test_collect_invalid_schemas(tmp_path):

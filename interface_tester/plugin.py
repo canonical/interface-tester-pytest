@@ -7,7 +7,7 @@ from subprocess import PIPE, Popen
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type
 
 from ops.testing import CharmType
-from scenario.state import Event, MetadataNotFoundError, State, _CharmSpec
+from scenario.state import MetadataNotFoundError, State, _CharmSpec
 
 from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
 from interface_tester.errors import (
@@ -22,7 +22,6 @@ from interface_tester.interface_test import (
 )
 from interface_tester.schema_base import DataBagSchema
 
-Callback = Callable[[State, Event], None]
 ROLE_TO_ROLE_META = {"provider": "provides", "requirer": "requires"}
 
 logger = logging.getLogger("pytest_interface_tester")
@@ -328,8 +327,11 @@ class InterfaceTester:
                 with tester_context(ctx):
                     test_fn()
             except Exception as e:
+                logger.exception(f"Interface tester plugin failed with {e}")
+
                 if self._RAISE_IMMEDIATELY:
                     raise e
+
                 errors.append((ctx, e))
             ran_some = True
 
