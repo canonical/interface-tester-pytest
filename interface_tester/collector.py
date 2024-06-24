@@ -61,7 +61,7 @@ class _CharmTestConfig:
         return hash((self.name, self.url, self.branch))
 
 
-class _CharmsDotYamlSpec(TypedDict):
+class _InterfacesDotYamlSpec(TypedDict):
     """Specification of the `interface.yaml` file each interface/version dir should contain."""
 
     providers: List[_CharmTestConfig]
@@ -152,8 +152,8 @@ def get_schemas(file: Path) -> Dict[Literal["requirer", "provider"], Type[DataBa
     return out
 
 
-def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec]:
-    """Attempt to read the `interface.yaml` for this version sudir.
+def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYamlSpec]:
+    """Attempt to read the `interface.yaml` for this version_dir.
 
     On failure, return None.
     """
@@ -196,7 +196,7 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
                 continue
             destination.append(cfg)
 
-    spec: _CharmsDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
+    spec: _InterfacesDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
     return spec
 
 
