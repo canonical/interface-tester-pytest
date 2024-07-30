@@ -82,6 +82,7 @@ class InterfaceTestSpec(TypedDict):
 
     provider: _RoleTestSpec
     requirer: _RoleTestSpec
+    owner: str
 
 
 def get_schema_from_module(module: object, name: str) -> Type[pydantic.BaseModel]:
