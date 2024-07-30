@@ -9,6 +9,7 @@ If you are contributing a relation interface specification or modifying the test
 schemas for one, you can execute this file to ascertain that all relevant data is being gathered
 correctly.
 """
+
 import dataclasses
 import importlib
 import inspect
@@ -60,8 +61,8 @@ class _CharmTestConfig:
         return hash((self.name, self.url, self.branch))
 
 
-class _CharmsDotYamlSpec(TypedDict):
-    """Specification of the `charms.yaml` file each interface/version dir should contain."""
+class _InterfacesDotYamlSpec(TypedDict):
+    """Specification of the `interface.yaml` file each interface/version dir should contain."""
 
     providers: List[_CharmTestConfig]
     requirers: List[_CharmTestConfig]
@@ -151,20 +152,20 @@ def get_schemas(file: Path) -> Dict[Literal["requirer", "provider"], Type[DataBa
     return out
 
 
-def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec]:
-    """Attempt to read the `charms.yaml` for this version sudir.
+def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYamlSpec]:
+    """Attempt to read the `interface.yaml` for this version_dir.
 
     On failure, return None.
     """
-    charms_yaml = version_dir / "charms.yaml"
-    if not charms_yaml.exists():
+    interface_yaml = version_dir / "interface.yaml"
+    if not interface_yaml.exists():
         return None
 
     charms = None
     try:
-        charms = yaml.safe_load(charms_yaml.read_text())
+        charms = yaml.safe_load(interface_yaml.read_text())
     except (json.JSONDecodeError, yaml.YAMLError) as e:
-        logger.error("failed to decode %s: verify that it is valid yaml: %s" % (charms_yaml, e))
+        logger.error("failed to decode %s: verify that it is valid yaml: %s" % (interface_yaml, e))
     except FileNotFoundError as e:
         logger.error("not found: %s" % e)
     if not charms:
@@ -175,10 +176,10 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
         raise TypeError(
-            f"{charms_yaml} file has unexpected providers/requirers spec; "
+            f"{interface_yaml} file has unexpected providers/requirers spec; "
             f"expected two lists of dicts (yaml mappings); "
             f"got {type(providers)}/{type(requirers)}. "
-            f"Invalid charms.yaml format."
+            f"Invalid interface.yaml format."
         )
 
     provider_configs = []
@@ -190,12 +191,12 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_CharmsDotYamlSpec
             except TypeError:
                 logger.error(
                     "failure parsing %s to _CharmTestConfig; invalid charm test "
-                    "configuration in %s/charms.yaml:providers" % (item, version_dir)
+                    "configuration in %s/interface.yaml:providers" % (item, version_dir)
                 )
                 continue
             destination.append(cfg)
 
-    spec: _CharmsDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
+    spec: _InterfacesDotYamlSpec = {"providers": provider_configs, "requirers": requirer_configs}
     return spec
 
 

@@ -1,4 +1,4 @@
-# Interface-tester-pytest
+# pytest-interface-tester
 
 This repository contains a library meant to facilitate compliance testing of charm relation interfaces.
 The problem is best stated as follows:
@@ -74,7 +74,7 @@ The flow is (from the POV of the spec repo):
 
 
 ## Customizing the fixture's address
-You can customize name and location of the fixture, but you will need to include that data when registering your charm with the interface. In `charms.yaml`, you can then specify:
+You can customize name and location of the fixture, but you will need to include that data when registering your charm with the interface. In `interface.yaml`, you can then specify:
 ```yaml
   - name: my-charm-name  # required
     url: https://github.com/foo/my-charm-name  # required
