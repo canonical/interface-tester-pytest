@@ -66,7 +66,7 @@ class _InterfacesDotYamlSpec(TypedDict):
 
     providers: List[_CharmTestConfig]
     requirers: List[_CharmTestConfig]
-    owner: str
+    owners: List[str]
 
 
 class _RoleTestSpec(TypedDict):
@@ -82,7 +82,7 @@ class InterfaceTestSpec(TypedDict):
 
     provider: _RoleTestSpec
     requirer: _RoleTestSpec
-    owner: str
+    owners: List[str]
 
 
 def get_schema_from_module(module: object, name: str) -> Type[pydantic.BaseModel]:
@@ -175,7 +175,7 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYaml
 
     providers = charms.get("providers", [])
     requirers = charms.get("requirers", [])
-    owner = charms.get("owner", "")
+    owners = charms.get("owners", "")
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
         raise TypeError(
@@ -202,7 +202,7 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYaml
     spec: _InterfacesDotYamlSpec = {
         "providers": provider_configs,
         "requirers": requirer_configs,
-        "owner": owner,
+        "owners": owners,
     }
     return spec
 
@@ -277,7 +277,7 @@ def gather_test_spec_for_version(
             "schema": schemas.get("requirer"),
             "charms": charms.get("requirers", []) if charms else [],
         },
-        "owner": charms.get("owner", "") if charms else "",
+        "owners": charms.get("owners", "") if charms else "",
     }
 
 
