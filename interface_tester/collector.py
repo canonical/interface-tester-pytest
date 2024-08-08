@@ -175,7 +175,7 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYaml
 
     providers = charms.get("providers", [])
     requirers = charms.get("requirers", [])
-    owners = charms.get("owners", "")
+    owners = charms.get("owners") or []
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
         raise TypeError(
@@ -277,7 +277,7 @@ def gather_test_spec_for_version(
             "schema": schemas.get("requirer"),
             "charms": charms.get("requirers", []) if charms else [],
         },
-        "owners": charms.get("owners", "") if charms else "",
+        "owners": charms.get("owners") or [] if charms else [],
     }
 
 
