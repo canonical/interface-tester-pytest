@@ -173,8 +173,8 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYaml
     if not charms:
         return None
 
-    providers = charms.get("providers", [])
-    requirers = charms.get("requirers", [])
+    providers = charms.get("providers") or []
+    requirers = charms.get("requirers") or []
     owners = charms.get("owners") or []
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
