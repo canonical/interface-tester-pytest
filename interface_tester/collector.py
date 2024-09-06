@@ -277,7 +277,7 @@ def gather_test_spec_for_version(
             "schema": schemas.get("requirer"),
             "charms": charms.get("requirers", []) if charms else [],
         },
-        "maintainers": charms.get("maintainers", "") if charms else "",
+        "maintainers": charms.get("maintainers") or "" if charms else "",
     }
 
 
