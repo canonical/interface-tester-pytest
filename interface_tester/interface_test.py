@@ -430,8 +430,7 @@ class Tester:
 
         if not isinstance(event, _Event):
             raise InvalidTestCaseError(
-                f"Expected _Event or str, not {type(raw_event)}. "
-                f"Invalid test case: {self} cannot cast {raw_event} to _Event."
+                f"Bad interface test specification: event {raw_event} should be a relation event."
             )
 
         # todo: if the user passes a relation event that is NOT about the relation
