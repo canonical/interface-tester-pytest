@@ -175,7 +175,7 @@ def _gather_charms_for_version(version_dir: Path) -> Optional[_InterfacesDotYaml
 
     providers = charms.get("providers") or []
     requirers = charms.get("requirers") or []
-    maintainers = charms.get("maintainers", "")
+    maintainers = charms.get("maintainers") or ""
 
     if not isinstance(providers, list) or not isinstance(requirers, list):
         raise TypeError(
