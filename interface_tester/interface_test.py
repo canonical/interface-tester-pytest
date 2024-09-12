@@ -380,7 +380,7 @@ class Tester:
         # some required config, a "happy" status, network information, OTHER relations.
         # Typically, should NOT touch the relation that this interface test is about
         #  -> so we overwrite and warn on conflict: state_template is the baseline,
-        state = copy.deepcopy(self.ctx.state_template or State())
+        state = dataclasses.replace(self.ctx.state_template) if self.ctx.state_template else State()
 
         relations = self._generate_relations_state(
             state, input_state, self.ctx.supported_endpoints, self.ctx.role
