@@ -1,6 +1,5 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-import copy
 import dataclasses
 import inspect
 import logging
@@ -15,6 +14,7 @@ import pydantic
 from ops.testing import CharmType
 from pydantic import ValidationError
 from scenario import Context, Relation, State
+from scenario.context import CharmEvents
 from scenario.state import _DEFAULT_JUJU_DATABAG, _Event, _EventPath
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
@@ -380,7 +380,9 @@ class Tester:
         # some required config, a "happy" status, network information, OTHER relations.
         # Typically, should NOT touch the relation that this interface test is about
         #  -> so we overwrite and warn on conflict: state_template is the baseline,
-        state = dataclasses.replace(self.ctx.state_template) if self.ctx.state_template else State()
+        state = (
+            dataclasses.replace(self.ctx.state_template) if self.ctx.state_template else State()
+        )
 
         relations = self._generate_relations_state(
             state, input_state, self.ctx.supported_endpoints, self.ctx.role
@@ -390,11 +392,12 @@ class Tester:
 
         # the Relation instance this test is about:
         relation = next(filter(lambda r: r.interface == self.ctx.interface_name, relations))
+        evt: _Event = self._cast_event(event, relation)
 
-        logger.info("collected test for %s with %s" % (self.ctx.interface_name, event))
-        return self._run_scenario(event, relation, modified_state)
+        logger.info("collected test for %s with %s" % (self.ctx.interface_name, evt.name))
+        return self._run_scenario(evt, modified_state)
 
-    def _run_scenario(self, event: Union[str, _Event], relation: Relation, state: State):
+    def _run_scenario(self, event: Union[str, _Event], state: State):
         logger.debug("running scenario with state=%s, event=%s" % (state, event))
 
         kwargs = {}
@@ -408,21 +411,20 @@ class Tester:
             config=self.ctx.config,
             **kwargs,
         )
-        event: _Event = self._cast_event(ctx, event, relation)
         return ctx.run(event, state)
 
-    def _cast_event(self, ctx: Context, raw_event: Union[str, _Event], relation: Relation):
+    def _cast_event(self, raw_event: Union[str, _Event], relation: Relation):
         if isinstance(raw_event, str):
             if raw_event.endswith("-relation-changed"):
-                event = ctx.on.relation_changed(relation)
+                event = CharmEvents.relation_changed(relation)
             elif raw_event.endswith("-relation-departed"):
-                event = ctx.on.relation_departed(relation)
+                event = CharmEvents.relation_departed(relation)
             elif raw_event.endswith("-relation-broken"):
-                event = ctx.on.relation_broken(relation)
+                event = CharmEvents.relation_broken(relation)
             elif raw_event.endswith("-relation-joined"):
-                event = ctx.on.relation_joined(relation)
+                event = CharmEvents.relation_joined(relation)
             elif raw_event.endswith("-relation-created"):
-                event = ctx.on.relation_created(relation)
+                event = CharmEvents.relation_created(relation)
             else:
                 raise InvalidTestCaseError(
                     f"Bad interface test specification: event {raw_event} is not a relation event."
