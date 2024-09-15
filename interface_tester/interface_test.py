@@ -414,6 +414,12 @@ class Tester:
         return ctx.run(event, state)
 
     def _cast_event(self, raw_event: Union[str, _Event], relation: Relation):
+        if not isinstance(raw_event, (_Event, str)):
+            raise InvalidTestCaseError(
+                f"Bad interface test specification: event {raw_event} should be a relation event "
+                f"string or _Event."
+            )
+
         if isinstance(raw_event, str):
             if raw_event.endswith("-relation-changed"):
                 event = CharmEvents.relation_changed(relation)
@@ -429,12 +435,6 @@ class Tester:
                 raise InvalidTestCaseError(
                     f"Bad interface test specification: event {raw_event} is not a relation event."
                 )
-
-        if not isinstance(event, _Event):
-            raise InvalidTestCaseError(
-                f"Bad interface test specification: event {raw_event} should be a relation event "
-                f"string or _Event."
-            )
 
         # todo: if the user passes a relation event that is NOT about the relation
         #  interface that this test is about, at this point we are injecting the wrong
