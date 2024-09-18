@@ -7,7 +7,9 @@ from subprocess import PIPE, Popen
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type
 
 from ops.testing import CharmType
-from scenario.state import MetadataNotFoundError, State, _CharmSpec
+from scenario import State
+from scenario.errors import MetadataNotFoundError
+from scenario.state import _CharmSpec
 
 from interface_tester.collector import InterfaceTestSpec, gather_test_spec_for_version
 from interface_tester.errors import (

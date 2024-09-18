@@ -13,8 +13,9 @@ from typing import Any, Callable, List, Literal, Optional, Union
 import pydantic
 from ops.testing import CharmType
 from pydantic import ValidationError
-from scenario import Context, Event, Relation, State, state
-from scenario.state import _EventPath
+from scenario import Context, Relation, State
+from scenario.context import CharmEvents
+from scenario.state import _DEFAULT_JUJU_DATABAG, _Event, _EventPath
 
 from interface_tester.errors import InvalidTestCaseError, SchemaValidationError
 
@@ -251,7 +252,7 @@ class Tester:
         """
         return _TESTER_CTX
 
-    def run(self, event: Union[str, Event]) -> State:
+    def run(self, event: Union[str, _Event]) -> State:
         """Simulate the emission on an event in the initial state you passed to the initializer.
 
         Calling this method will run scenario and verify that the charm being tested can handle
@@ -326,7 +327,7 @@ class Tester:
 
             # remove the default unit databag keys or we'll get false positives.
             local_unit_data_keys = set(relation.local_unit_data).difference(
-                set(state.DEFAULT_JUJU_DATABAG.keys())
+                set(_DEFAULT_JUJU_DATABAG.keys())
             )
 
             if local_unit_data_keys:
@@ -365,7 +366,7 @@ class Tester:
         # release singleton
         Tester.__instance__ = None
 
-    def _run(self, event: Union[str, Event]):
+    def _run(self, event: Union[str, _Event]):
         logger.debug("running %s" % event)
         self._has_run = True
 
@@ -379,22 +380,24 @@ class Tester:
         # some required config, a "happy" status, network information, OTHER relations.
         # Typically, should NOT touch the relation that this interface test is about
         #  -> so we overwrite and warn on conflict: state_template is the baseline,
-        state = (self.ctx.state_template or State()).copy()
+        state = (
+            dataclasses.replace(self.ctx.state_template) if self.ctx.state_template else State()
+        )
 
         relations = self._generate_relations_state(
             state, input_state, self.ctx.supported_endpoints, self.ctx.role
         )
         # State is frozen; replace
-        modified_state = state.replace(relations=relations)
+        modified_state = dataclasses.replace(state, relations=relations)
 
         # the Relation instance this test is about:
         relation = next(filter(lambda r: r.interface == self.ctx.interface_name, relations))
-        evt: Event = self._cast_event(event, relation)
+        evt: _Event = self._cast_event(event, relation)
 
         logger.info("collected test for %s with %s" % (self.ctx.interface_name, evt.name))
         return self._run_scenario(evt, modified_state)
 
-    def _run_scenario(self, event: Event, state: State):
+    def _run_scenario(self, event: Union[str, _Event], state: State):
         logger.debug("running scenario with state=%s, event=%s" % (state, event))
 
         kwargs = {}
@@ -410,20 +413,28 @@ class Tester:
         )
         return ctx.run(event, state)
 
-    def _cast_event(self, raw_event: Union[str, Event], relation: Relation):
-        # test.EVENT might be a string or an Event. Cast to Event.
-        event = Event(raw_event) if isinstance(raw_event, str) else raw_event
-
-        if not isinstance(event, Event):
+    def _cast_event(self, raw_event: Union[str, _Event], relation: Relation):
+        if not isinstance(raw_event, (_Event, str)):
             raise InvalidTestCaseError(
-                f"Expected Event or str, not {type(raw_event)}. "
-                f"Invalid test case: {self} cannot cast {raw_event} to Event."
+                f"Bad interface test specification: event {raw_event} should be a relation event "
+                f"string or _Event."
             )
 
-        if not event._is_relation_event:
-            raise InvalidTestCaseError(
-                f"Bad interface test specification: event {raw_event} " "is not a relation event."
-            )
+        if isinstance(raw_event, str):
+            if raw_event.endswith("-relation-changed"):
+                event = CharmEvents.relation_changed(relation)
+            elif raw_event.endswith("-relation-departed"):
+                event = CharmEvents.relation_departed(relation)
+            elif raw_event.endswith("-relation-broken"):
+                event = CharmEvents.relation_broken(relation)
+            elif raw_event.endswith("-relation-joined"):
+                event = CharmEvents.relation_joined(relation)
+            elif raw_event.endswith("-relation-created"):
+                event = CharmEvents.relation_created(relation)
+            else:
+                raise InvalidTestCaseError(
+                    f"Bad interface test specification: event {raw_event} is not a relation event."
+                )
 
         # todo: if the user passes a relation event that is NOT about the relation
         #  interface that this test is about, at this point we are injecting the wrong
@@ -434,8 +445,10 @@ class Tester:
 
         # next we need to ensure that the event's .relation is our relation, and that the endpoint
         # in the relation and the event path match that of the charm we're testing.
-        charm_event = event.replace(
-            relation=relation, path=relation.endpoint + typing.cast(_EventPath, event.path).suffix
+        charm_event = dataclasses.replace(
+            event,
+            relation=relation,
+            path=relation.endpoint + typing.cast(_EventPath, event.path).suffix,
         )
 
         return charm_event
@@ -495,7 +508,7 @@ class Tester:
             # relations that come from the state_template presumably have the right endpoint,
             # but those that we get from interface tests cannot.
             relations_with_endpoint = [
-                r.replace(endpoint=endpoint) for r in relations_from_input_state
+                dataclasses.replace(r, endpoint=endpoint) for r in relations_from_input_state
             ]
 
             relations.extend(relations_with_endpoint)
