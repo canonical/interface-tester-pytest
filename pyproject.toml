@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pytest-interface-tester"
 
-version = "3.2"
+version = "3.2.0"
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" },
 ]
