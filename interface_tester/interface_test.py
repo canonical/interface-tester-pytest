@@ -435,6 +435,8 @@ class Tester:
                 raise InvalidTestCaseError(
                     f"Bad interface test specification: event {raw_event} is not a relation event."
                 )
+        else:
+            event = raw_event
 
         # todo: if the user passes a relation event that is NOT about the relation
         #  interface that this test is about, at this point we are injecting the wrong

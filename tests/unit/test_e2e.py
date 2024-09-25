@@ -208,6 +208,33 @@ def test_data_on_changed():
         tester.run()
 
 
+def test_run_with_charmevents():
+    tester = _setup_with_test_file(
+        dedent(
+            """
+from scenario import State, Relation
+from scenario.context import CharmEvents
+
+from interface_tester.interface_test import Tester
+
+def test_data_on_changed():
+    relation = Relation(
+        endpoint='foobadooble',
+        interface='tracing',
+        remote_app_name='remote',
+        local_app_data={},
+    )
+    t = Tester(State(relations={relation}))
+    state_out = t.run(CharmEvents.relation_changed(relation))
+    t.assert_schema_valid()
+"""
+        )
+    )
+
+    with pytest.raises(NoSchemaError):
+        tester.run()
+
+
 def test_error_if_assert_schema_without_schema():
     tester = _setup_with_test_file(
         dedent(
