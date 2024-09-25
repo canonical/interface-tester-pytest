@@ -108,12 +108,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     t.skip_schema_validation()
 """
@@ -134,12 +134,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     t.run("foobadooble-changed")
     t.skip_schema_validation()
@@ -165,12 +165,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     t.assert_relation_data_empty()
 """
@@ -192,12 +192,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     t.assert_schema_valid()
 """
@@ -218,12 +218,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     state_out = t.run("axolotl-relation-changed")
     t.assert_schema_valid()
@@ -245,12 +245,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     state_out = t.run("axolotl-relation-changed")
 """
@@ -271,12 +271,12 @@ from interface_tester.interface_test import Tester
 
 def test_data_on_changed():
     t = Tester(State(
-        relations={Relation(
+        relations=[Relation(
             endpoint='foobadooble',  # should not matter
             interface='tracing',
             remote_app_name='remote',
             local_app_data={}
-        )}
+        )]
     ))
     
 """
@@ -321,12 +321,12 @@ def test_valid_run(endpoint, evt_type):
 
  def test_data_on_changed():
      t = Tester(State(
-         relations={{Relation(
+         relations=[Relation(
              endpoint='{endpoint}',  # should not matter
              interface='tracing',
              remote_app_name='remote',
              local_app_data={{}}
-         )}}
+         )]
      ))
      state_out = t.run("{endpoint}-relation-{evt_type}")
      t.assert_schema_valid(schema=DataBagSchema())
@@ -348,13 +348,13 @@ def test_valid_run_default_schema():
 
  def test_data_on_changed():
      t = Tester(State(
-         relations={Relation(
+         relations=[Relation(
              endpoint='foobadooble',  # should not matter
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"1"},
              local_unit_data={"bar": "smackbeef"}
-         )}
+         )]
      ))
      state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid()
@@ -391,13 +391,13 @@ def test_default_schema_validation_failure():
 
  def test_data_on_changed():
      t = Tester(State(
-         relations={Relation(
+         relations=[Relation(
              endpoint='foobadooble',  # should not matter
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"abc"},
              local_unit_data={"bar": "smackbeef"}
-         )}
+         )]
      ))
      state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid()
@@ -444,13 +444,13 @@ def test_valid_run_custom_schema():
      
  def test_data_on_changed():
      t = Tester(State(
-         relations={Relation(
+         relations=[Relation(
              endpoint='foobadooble',  # should not matter
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"1"},
              local_unit_data={"bar": "smackbeef"}
-         )}
+         )]
      ))
      state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid(schema=FooBarSchema)
@@ -481,13 +481,13 @@ def test_invalid_custom_schema():
 
  def test_data_on_changed():
      t = Tester(State(
-         relations={Relation(
+         relations=[Relation(
              endpoint='foobadooble',  # should not matter
              interface='tracing',
              remote_app_name='remote',
              local_app_data={"foo":"abc"},
              local_unit_data={"bar": "smackbeef"}
-         )}
+         )]
      ))
      state_out = t.run("axolotl-relation-changed")
      t.assert_schema_valid(schema=FooBarSchema)
