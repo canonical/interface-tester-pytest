@@ -69,7 +69,6 @@ class InterfaceTester:
         meta: Optional[Dict[str, Any]] = None,
         actions: Optional[Dict[str, Any]] = None,
         config: Optional[Dict[str, Any]] = None,
-        endpoint: Optional[str] = None,
     ):
         """
 
@@ -84,8 +83,6 @@ class InterfaceTester:
         :param meta: charm metadata.yaml contents.
         :param actions: charm actions.yaml contents.
         :param config: charm config.yaml contents.
-        :param endpoint: endpoint to test. In case there are multiple
-            endpoints with the same interface.
         :param juju_version: juju version that Scenario will simulate (also sets JUJU_VERSION
             envvar at charm runtime.)
         """
@@ -99,8 +96,6 @@ class InterfaceTester:
             self._config = config
         if repo:
             self._repo = repo
-        if endpoint:
-            self._endpoint = endpoint
         if interface_name:
             self._interface_name = interface_name
         if interface_version is not None:
@@ -284,13 +279,14 @@ class InterfaceTester:
             raise RuntimeError(f"this charm does not declare any endpoint using {interface_name}.")
 
         role: RoleLiteral
-        for role in supported_endpoints:
+        for role, endpoints in supported_endpoints.items():
             logger.debug(f"collecting scenes for {role}")
 
             spec = tests[role]
             schema = spec["schema"]
             for test in spec["tests"]:
-                yield test, role, schema
+                for endpoint in endpoints:
+                    yield test, role, schema, endpoint
 
     def __repr__(self):
         return f"""<Interface Tester: 
@@ -301,7 +297,6 @@ class InterfaceTester:
         \tmeta={self._meta}
         \tactions={self._actions}
         \tconfig={self._config}
-        \tendpoint={self._endpoint}
         \tinterface_name={self._interface_name}
         \tinterface_version={self._interface_version}
         \tjuju_version={self._juju_version}
@@ -317,7 +312,7 @@ class InterfaceTester:
         errors = []
         ran_some = False
 
-        for test_fn, role, schema in self._yield_tests():
+        for test_fn, role, schema, endpoint in self._yield_tests():
             ctx = _InterfaceTestContext(
                 role=role,
                 schema=schema,
@@ -331,7 +326,7 @@ class InterfaceTester:
                 supported_endpoints=self._gather_supported_endpoints(),
                 test_fn=test_fn,
                 juju_version=self._juju_version,
-                endpoint=self._endpoint,
+                endpoint=endpoint,
             )
             try:
                 with tester_context(ctx):
