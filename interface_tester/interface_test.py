@@ -81,7 +81,10 @@ class _InterfaceTestContext:
     """Initial state that this test should be run with, according to the charm."""
 
     endpoint: str = None
-    """Endpoint being tested. Only required if there's multiple endpoints with the same interface."""
+    """
+    Endpoint being tested. 
+    Only required if there's multiple endpoints with the same interface.
+    """
 
     """The role (provider|requirer) that this test is about."""
     schema: Optional["DataBagSchema"] = None
