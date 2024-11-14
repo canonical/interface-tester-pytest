@@ -80,6 +80,9 @@ class _InterfaceTestContext:
     state_template: Optional[State]
     """Initial state that this test should be run with, according to the charm."""
 
+    endpoint: str = None
+    """Endpoint being tested. Only required if there's multiple endpoints with the same interface."""
+
     """The role (provider|requirer) that this test is about."""
     schema: Optional["DataBagSchema"] = None
     """Databag schema to validate the output relation with."""
@@ -481,7 +484,10 @@ class Tester:
         interface_name = self.ctx.interface_name
 
         # determine what charm endpoint we're testing.
-        endpoint = self._get_endpoint(supported_endpoints, role, interface_name=interface_name)
+
+        endpoint = self.ctx.endpoint or self._get_endpoint(
+            supported_endpoints, role, interface_name=interface_name
+        )
 
         for rel in state_template.relations:
             if rel.interface == interface_name:

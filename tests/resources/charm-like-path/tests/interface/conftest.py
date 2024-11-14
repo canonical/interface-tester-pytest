@@ -29,7 +29,11 @@ def interface_tester(interface_tester: CRILikePathTester):
         charm_type=DummiCharm,
         meta={
             "name": "dummi",
-            "provides": {"tracing": {"interface": "tracing"}},
+            "provides": {
+                "tracing": {"interface": "tracing"},
+                "mysql-1": {"interface": "mysql"},
+                "mysql-2": {"interface": "mysql"},
+                         },
             "requires": {"tracing": {"interface": "tracing"}},
         },
         state_template=State(leader=True),

@@ -41,7 +41,11 @@ def interface_tester():
         meta={
             "name": "dummi",
             # interface tests should be agnostic to endpoint names
-            "provides": {"dead": {"interface": "tracing"}},
+            "provides": {
+                "dead": {"interface": "tracing"},
+                "mysql-1": {"interface": "mysql"},
+                "mysql-2": {"interface": "mysql"},
+            },
             "requires": {"beef-req": {"interface": "tracing"}},
         },
         state_template=State(leader=True),
@@ -523,3 +527,34 @@ def test_invalid_custom_schema():
     )
     with pytest.raises(SchemaValidationError):
         tester.run()
+
+
+@pytest.mark.parametrize(
+    "endpoint", ("mysql-1", "mysql-2")
+)
+@pytest.mark.parametrize("evt_type", ("changed", "created", "joined", "departed", "broken"))
+def test_multiple_endpoints(endpoint, evt_type):
+    tester = _setup_with_test_file(
+        dedent(
+            f"""
+ from scenario import State, Relation
+
+ from interface_tester.interface_test import Tester
+ from interface_tester.schema_base import DataBagSchema
+
+ def test_data_on_changed():
+     t = Tester(State(
+         relations={{Relation(
+             endpoint='{endpoint}',  # should not matter
+             interface='tracing',
+             remote_app_name='remote',
+             local_app_data={{}}
+         )}}
+     ))
+     state_out = t.run("{endpoint}-relation-{evt_type}")
+     t.assert_schema_valid(schema=DataBagSchema())
+ """
+        )
+    )
+
+    tester.run()
