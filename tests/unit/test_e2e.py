@@ -529,9 +529,7 @@ def test_invalid_custom_schema():
         tester.run()
 
 
-@pytest.mark.parametrize(
-    "endpoint", ("mysql-1", "mysql-2")
-)
+@pytest.mark.parametrize("endpoint", ("mysql-1", "mysql-2"))
 @pytest.mark.parametrize("evt_type", ("changed", "created", "joined", "departed", "broken"))
 def test_multiple_endpoints(endpoint, evt_type):
     tester = _setup_with_test_file(

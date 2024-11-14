@@ -33,7 +33,7 @@ def interface_tester(interface_tester: CRILikePathTester):
                 "tracing": {"interface": "tracing"},
                 "mysql-1": {"interface": "mysql"},
                 "mysql-2": {"interface": "mysql"},
-                         },
+            },
             "requires": {"tracing": {"interface": "tracing"}},
         },
         state_template=State(leader=True),
