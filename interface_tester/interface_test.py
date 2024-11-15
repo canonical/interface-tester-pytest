@@ -61,10 +61,11 @@ class _InterfaceTestContext:
 
     interface_name: str
     """The name of the interface that this test is about."""
+    endpoint: str
+    """Endpoint being tested."""
     version: int
     """The version of the interface that this test is about."""
     role: Role
-
     charm_type: CharmType
     """Charm class being tested"""
     supported_endpoints: dict
@@ -79,12 +80,6 @@ class _InterfaceTestContext:
     """Test function."""
     state_template: Optional[State]
     """Initial state that this test should be run with, according to the charm."""
-
-    endpoint: str = None
-    """
-    Endpoint being tested. 
-    Only required if there's multiple endpoints with the same interface.
-    """
 
     """The role (provider|requirer) that this test is about."""
     schema: Optional["DataBagSchema"] = None
