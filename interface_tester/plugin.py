@@ -333,7 +333,7 @@ class InterfaceTester:
                 actions=self.actions,
                 supported_endpoints=self._gather_supported_endpoints(),
                 test_fn=test_fn,
-                juju_version=self._juju_version
+                juju_version=self._juju_version,
             )
             try:
                 with tester_context(ctx):

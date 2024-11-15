@@ -61,7 +61,7 @@ def test_local_run(interface_tester):
     interface_tester.run()
 
 
-def _setup_with_test_file(test_file: str, schema_file: str = None):
+def _setup_with_test_file(test_file: str, schema_file: str = None, interface: str = "tracing"):
     td = tempfile.TemporaryDirectory()
     temppath = Path(td.name)
 
@@ -72,7 +72,7 @@ def _setup_with_test_file(test_file: str, schema_file: str = None):
             pth = temppath / "interfaces" / self._interface_name / f"v{self._interface_version}"
 
             test_dir = pth / "interface_tests"
-            test_dir.mkdir(parents=True)
+            test_dir.mkdir(parents=True, exist_ok=True)
             test_provider = test_dir / "test_provider.py"
             test_provider.write_text(test_file)
 
@@ -88,12 +88,16 @@ def _setup_with_test_file(test_file: str, schema_file: str = None):
 
     interface_tester = TempDirTester()
     interface_tester.configure(
-        interface_name="tracing",
+        interface_name=interface,
         charm_type=DummiCharm,
         meta={
             "name": "dummi",
             # interface tests should be agnostic to endpoint names
-            "provides": {"dead": {"interface": "tracing"}},
+            "provides": {
+                "dead": {"interface": "tracing"},
+                "mysql-1": {"interface": "mysql"},
+                "mysql-2": {"interface": "mysql"},
+            },
             "requires": {"beef-req": {"interface": "tracing"}},
         },
         state_template=State(leader=True),
@@ -543,8 +547,8 @@ def test_multiple_endpoints(endpoint, evt_type):
  def test_data_on_changed():
      t = Tester(State(
          relations={{Relation(
-             endpoint='{endpoint}',  # should not matter
-             interface='tracing',
+             endpoint='foobadoodle-doo',  # should not matter
+             interface='mysql',
              remote_app_name='remote',
              local_app_data={{}}
          )}}
@@ -552,7 +556,15 @@ def test_multiple_endpoints(endpoint, evt_type):
      state_out = t.run("{endpoint}-relation-{evt_type}")
      t.assert_schema_valid(schema=DataBagSchema())
  """
-        )
+        ),
+        interface="mysql",
     )
+
+    tests = tuple(tester._yield_tests())
+    # dummicharm is a provider of two mysql-interface endpoints called mysql-1 and mysql-2,
+    # so we have two tests
+    assert len(tests) == 2
+    assert set(t[1] for t in tests) == {"provider"}
+    assert [t[3] for t in tests] == ["mysql-1", "mysql-2"]
 
     tester.run()
