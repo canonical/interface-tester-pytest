@@ -74,7 +74,8 @@ class InterfaceTester:
         """
 
         :arg interface_name: the interface to test.
-        :arg endpoint: the endpoint to test. If omitted, will test all endpoints with this interface.
+        :arg endpoint: the endpoint to test.
+            If omitted, will test all endpoints with this interface.
         :param interface_version: what version of this interface we should be testing.
         :arg state_template: template state to use with the scenario test.
             The plugin will inject the relation spec under test, unless already defined.
