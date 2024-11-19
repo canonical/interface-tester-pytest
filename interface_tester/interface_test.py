@@ -61,10 +61,11 @@ class _InterfaceTestContext:
 
     interface_name: str
     """The name of the interface that this test is about."""
+    endpoint: str
+    """Endpoint being tested."""
     version: int
     """The version of the interface that this test is about."""
     role: Role
-
     charm_type: CharmType
     """Charm class being tested"""
     supported_endpoints: dict
@@ -481,7 +482,10 @@ class Tester:
         interface_name = self.ctx.interface_name
 
         # determine what charm endpoint we're testing.
-        endpoint = self._get_endpoint(supported_endpoints, role, interface_name=interface_name)
+
+        endpoint = self.ctx.endpoint or self._get_endpoint(
+            supported_endpoints, role, interface_name=interface_name
+        )
 
         for rel in state_template.relations:
             if rel.interface == interface_name:

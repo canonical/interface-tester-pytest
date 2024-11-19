@@ -47,6 +47,7 @@ class InterfaceTester:
         self._meta = None
         self._actions = None
         self._config = None
+        self._endpoint = None
         self._interface_name = None
         self._interface_version = 0
         self._juju_version = None
@@ -62,6 +63,7 @@ class InterfaceTester:
         branch: Optional[str] = None,
         base_path: Optional[str] = None,
         interface_name: Optional[str] = None,
+        endpoint: Optional[str] = None,
         interface_version: Optional[int] = None,
         state_template: Optional[State] = None,
         juju_version: Optional[str] = None,
@@ -72,6 +74,8 @@ class InterfaceTester:
         """
 
         :arg interface_name: the interface to test.
+        :arg endpoint: the endpoint to test.
+            If omitted, will test all endpoints with this interface.
         :param interface_version: what version of this interface we should be testing.
         :arg state_template: template state to use with the scenario test.
             The plugin will inject the relation spec under test, unless already defined.
@@ -95,6 +99,8 @@ class InterfaceTester:
             self._config = config
         if repo:
             self._repo = repo
+        if endpoint:
+            self._endpoint = endpoint
         if interface_name:
             self._interface_name = interface_name
         if interface_version is not None:
@@ -278,13 +284,17 @@ class InterfaceTester:
             raise RuntimeError(f"this charm does not declare any endpoint using {interface_name}.")
 
         role: RoleLiteral
-        for role in supported_endpoints:
+        for role, endpoints in supported_endpoints.items():
             logger.debug(f"collecting scenes for {role}")
 
             spec = tests[role]
             schema = spec["schema"]
             for test in spec["tests"]:
-                yield test, role, schema
+                for endpoint in endpoints:
+                    if self._endpoint and endpoint != self._endpoint:
+                        logger.debug(f"skipped compatible endpoint {endpoint}")
+                        continue
+                    yield test, role, schema, endpoint
 
     def __repr__(self):
         return f"""<Interface Tester: 
@@ -310,11 +320,12 @@ class InterfaceTester:
         errors = []
         ran_some = False
 
-        for test_fn, role, schema in self._yield_tests():
+        for test_fn, role, schema, endpoint in self._yield_tests():
             ctx = _InterfaceTestContext(
                 role=role,
                 schema=schema,
                 interface_name=self._interface_name,
+                endpoint=endpoint,
                 version=self._interface_version,
                 charm_type=self._charm_type,
                 state_template=self._state_template,
@@ -351,6 +362,8 @@ class InterfaceTester:
             )
 
         if not ran_some:
-            msg = f"no tests gathered for {self._interface_name}/v{self._interface_version}"
+            msg = f"no tests gathered for {self._interface_name!r}/v{self._interface_version}"
+            if self._endpoint:
+                msg += f" and endpoint {self._endpoint!r}"
             logger.warning(msg)
             raise NoTestsRun(msg)
