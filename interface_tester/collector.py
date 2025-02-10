@@ -38,7 +38,7 @@ class _TestSetup(TypedDict):
 
     charm_root: Optional[str]
     """Relative path, from the root of the repo, to where the root of the charm is.
-    Useful for multi-charm monorepos."""
+    Useful for multi-charm monorepos. If not provided defaults to the charm name."""
 
     location: Optional[str]
     """Path to a python file, relative to the charm's git repo root, where the `identifier` 
