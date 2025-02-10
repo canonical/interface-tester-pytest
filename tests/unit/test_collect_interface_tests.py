@@ -46,3 +46,4 @@ def test_load_from_mock_cri():
     assert len(requirer["tests"]) == 3
     assert requirer["schema"]
     assert not requirer["charms"]
+

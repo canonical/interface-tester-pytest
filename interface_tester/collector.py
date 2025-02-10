@@ -44,6 +44,10 @@ class _TestSetup(TypedDict):
     """Name of a python identifier pointing to a pytest fixture yielding a 
     configured InterfaceTester instance. If not provided defaults to "interface_tester" """
 
+    pre_run: Optional[str]
+    """Bash script to do whatever it takes in this specific repo to generate a requirements.txt 
+    file we can use to set up the venv to run the tests in."""
+
 
 @dataclasses.dataclass
 class _CharmTestConfig:
