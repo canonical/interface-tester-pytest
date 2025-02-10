@@ -36,6 +36,10 @@ class _TestSetup(TypedDict):
 
     Contains information to configure the tester."""
 
+    charm_root: Optional[str]
+    """Relative path, from the root of the repo, to where the root of the charm is.
+    Useful for multi-charm monorepos."""
+
     location: Optional[str]
     """Path to a python file, relative to the charm's git repo root, where the `identifier` 
     below can be found. If not provided defaults to "tests/interfaces/conftest.py" """
@@ -46,7 +50,8 @@ class _TestSetup(TypedDict):
 
     pre_run: Optional[str]
     """Bash script to do whatever it takes in this specific repo to generate a requirements.txt 
-    file we can use to set up the venv to run the tests in."""
+    file we can use to set up the venv to run the tests in. Useful for charms that use uv, poetry 
+    or something else file to manage dependencies."""
 
 
 @dataclasses.dataclass
