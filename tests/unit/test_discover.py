@@ -35,7 +35,7 @@ tracing:
       - test_no_data_on_joined
      - schema NOT OK
      - charms:
-       - tempo-k8s (https://github.com/canonical/tempo-k8s-operator) custom_test_setup=no
+       - tempo-k8s (https://github.com/canonical/tempo-k8s-operator) custom_test_setup=yes
    - requirer:
       - test_data_on_changed
       - test_no_data_on_created

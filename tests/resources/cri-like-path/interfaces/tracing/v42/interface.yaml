@@ -1,5 +1,10 @@
 providers:
   - name: tempo-k8s
     url: https://github.com/canonical/tempo-k8s-operator
+    test_setup:
+      identifier: foo
+      location: tests/bar.py
+      pre_run: |
+        exit(2) 
 
 requirers: []
