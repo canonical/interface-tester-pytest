@@ -51,7 +51,7 @@ class _TestSetup(TypedDict):
     pre_run: Optional[str]
     """Bash script to do whatever it takes in this specific repo to generate a requirements.txt 
     file we can use to set up the venv to run the tests in. Useful for charms that use uv, poetry 
-    or something else file to manage dependencies."""
+    or something else to manage dependencies."""
 
 
 @dataclasses.dataclass
